@@ -1,5 +1,5 @@
-from day1_1 import read_lines
-from handy_dandy_string_manipulations.string_manipulations import DIGIT_NUMERALS, DIGIT_NUMERAL_REPLACEMENTS
+from handy_dandy_library.file_processing import read_lines
+from handy_dandy_library.string_manipulations import DIGIT_NUMERALS, DIGIT_NUMERAL_REPLACEMENTS
 from typing import Callable
 
 
@@ -41,8 +41,8 @@ def sum_calibration_values(file_path: str) -> int:
 
 
 def tests():
-    assert calibration_value("eightwothree") == 83
-    assert sum_calibration_values("puzzle2_test_input.txt") == 281
+    assert calibration_value("eightwothree") == 83  # noqa
+    assert sum_calibration_values("puzzle1_2_test_input.txt") == 281
 
 
 def main():

@@ -1,7 +1,4 @@
-def read_lines(file_path: str) -> list[str]:
-    with open(file_path, 'r') as file:
-        content = [line[:-1] if line[-1] == '\n' else line for line in file]
-    return content
+from handy_dandy_library.file_processing import read_lines
 
 
 def calibration_value(phrase: str) -> int:

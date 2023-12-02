@@ -20,5 +20,16 @@ def convert_numeric_in_text_to_digits(phrase: str) -> str:
     return pattern.sub(digit_matching, phrase)
 
 
+def find_first_char_index(phrase: str, target_char: str) -> int:
+    for i, char in enumerate(phrase):
+        if char == target_char:
+            return i
+
+    if len(target_char) > 1:
+        raise TypeError(f"target_char: \'{target_char}\' is more than 1 character long!")
+
+    return -1
+
+
 if __name__ == "__main__":
     print("This is a library file. Import, but don't run.")
