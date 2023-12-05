@@ -27,6 +27,7 @@ class FarmingDataReader:
         self.file_path = file_path
         self.__lines = read_lines(file_path)
         self.__start_index = 0
+        self.n = len(self.__lines)
 
     def lines(self, end_index: int) -> list[str]:
         start_index = self.start_index
@@ -52,10 +53,15 @@ class FarmingDataReader:
         map_numbers_phrase = None
 
         for i, line in enumerate(self.__lines[self.__start_index:]):
+            if self.start_index + i == self.n - 1:
+                self.__start_index += 1
+                map_numbers_phrase = self.lines(i + 1)
+                break
+
             if line == '':
                 self.__start_index += 1
                 map_numbers_phrase = self.lines(i - 1)
-                self.__start_index += i + 1
+                self.__start_index += i
                 break
 
         map_numbers = [Map(tuple(int(number) for number in line.split(' '))) for line in map_numbers_phrase]
@@ -63,13 +69,10 @@ class FarmingDataReader:
 
     def lowest_location(self):
         seeds = self.__parse_seed_numbers()
-        print("Starting seeds:")
-        print(seeds)
-        print('-'*50)
-        for _ in range(6):
+        for _ in range(7):
             maps = self.__parse_next_source_to_destination_map()
+            print(maps)
             seeds = self.destination(seeds, maps)
-
         return min(seeds)
 
     @staticmethod
@@ -89,11 +92,11 @@ def tests():
 
 
 def main():
-    # tests()
+    tests()
 
-    farming_data_reader = FarmingDataReader("day_5_1_input.txt")
-    t = farming_data_reader.lowest_location()
-    print(t)
+    # farming_data_reader = FarmingDataReader("day_5_1_input.txt")
+    # t = farming_data_reader.lowest_location()
+    # print(t)
 
 
 if __name__ == "__main__":
