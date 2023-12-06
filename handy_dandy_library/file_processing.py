@@ -5,4 +5,4 @@ def read_lines(file_path: str) -> list[str]:
 
 
 if __name__ == "__main__":
-    print("This is a library file. Import, but don't run.")
+    print("This is lower library file. Import, but don't run.")

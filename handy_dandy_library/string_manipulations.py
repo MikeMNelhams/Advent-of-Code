@@ -31,5 +31,13 @@ def find_first_char_index(phrase: str, target_char: str) -> int:
     return -1
 
 
+def parse_ints(phrase: str) -> list[int]:
+    return [int(substring) for substring in phrase.split(' ') if substring != '']
+
+
+def parse_int_ignore_spaces(phrase: str) -> int:
+    return int(phrase.replace(' ', ''))
+
+
 if __name__ == "__main__":
-    print("This is a library file. Import, but don't run.")
+    print("This is lower library file. Import, but don't run.")
