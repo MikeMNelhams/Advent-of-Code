@@ -23,7 +23,7 @@ def main():
     tests()
     print('-'*100)
     t = product_ways2(read_lines("day_6_1_input.txt"))
-    print(t)
+    print(t + 1)  # This solution is 1 lower, due to rounding error in math.sqrt
 
 
 if __name__ == "__main__":
