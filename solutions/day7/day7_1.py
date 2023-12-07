@@ -4,7 +4,7 @@ from handy_dandy_library.file_processing import read_lines
 
 
 CARD_ORDERING = {'A': 13, 'K': 12, 'Q': 11, 'J': 10, 'T': 9, '9': 8, '8': 7, '7': 6,
-                 '6': 5, '5': 4, '4': 3, '3': 2, '2': 1, '1': 0}
+                 '6': 5, '5': 4, '4': 3, '3': 2, '2': 1}
 
 
 class HandReader:
@@ -12,12 +12,12 @@ class HandReader:
         self.hand = hand
         self._card_counts = Counter(hand)
         self._most_common = self._card_counts.most_common()
-        self.hand_type = self.__get_hand_type()
+        self.hand_type = self._get_hand_type()
 
     def __repr__(self) -> str:
         return f"Hand({self.hand} | type: {self.hand_type})"
 
-    def __get_hand_type(self) -> int:
+    def _get_hand_type(self) -> int:
         if self.is_5_of_a_kind():
             return 6
         if self.is_4_of_a_kind():
