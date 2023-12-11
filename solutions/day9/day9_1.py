@@ -1,7 +1,4 @@
-import time
-
 from handy_dandy_library.file_processing import read_lines
-from time import sleep
 
 
 def line_to_sequence(line: str) -> list[int]:
@@ -19,9 +16,13 @@ def oasis(sequence: list[int]) -> int:
             break
         difference_sequences.append(differences(difference_sequences[-1]))
 
+    print(difference_sequences)
+
     total = 0
-    for sequence in difference_sequences:
+    for sequence in difference_sequences[:-1]:
         total += sequence[-1]
+        print(total)
+
     return total
 
 
@@ -36,8 +37,8 @@ def tests():
 def main():
     tests()
 
-    t = oasis_total(read_lines("day_9_1_input.txt"))
-    print(t)
+    # t = oasis_total(read_lines("day_9_1_input.txt"))
+    # print(t)
 
 
 if __name__ == "__main__":
