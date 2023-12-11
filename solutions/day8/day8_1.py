@@ -1,5 +1,3 @@
-from time import sleep
-
 from handy_dandy_library.file_processing import read_lines
 
 
@@ -63,9 +61,9 @@ def zig_zag(lines: list[str]) -> int:
 
 
 def tests():
-    # assert zig_zag(read_lines("day_8_1_test_input1.txt")) == 2
-    # print('-' * 50)
-    # assert zig_zag(read_lines("day_8_1_test_input2.txt")) == 6
+    assert zig_zag(read_lines("day_8_1_test_input1.txt")) == 2
+    print('-' * 50)
+    assert zig_zag(read_lines("day_8_1_test_input2.txt")) == 6
     pass
 
 
