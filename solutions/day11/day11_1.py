@@ -16,44 +16,46 @@ class Cosmos:
     def __repr__(self) -> str:
         return f"Galaxies: {self.galaxy_coordinates} | Size: ({self.n}, {self.m})"
 
+    def get_dimension_length(self, dimension: int) -> int:
+        if dimension == 0:
+            return self.n
+        return self.m
+
+    def set_dimension_length(self, dimension: int, value: int) -> int:
+        if dimension == 0:
+            self.n = value
+            return None
+        self.m = value
+        return None
+
     @staticmethod
     def __galaxy_coordinates(lines: list[str]) -> GalaxyCoordinates:
         galaxy = [[i, j] for i, line in enumerate(lines) for j, char in enumerate(line) if char == '#']
         return galaxy
 
-    def empty_row_indices(self) -> list[int]:
-        available_rows = set(range(self.n))
-        found_rows = {x[0] for x in self.galaxy_coordinates}
+    def _empty_dimension_indices(self, dimension: int) -> list[int]:
+        available_rows = set(range(self.get_dimension_length(dimension)))
+        found_rows = {x[dimension] for x in self.galaxy_coordinates}
         return list(available_rows - found_rows)
 
-    def empty_column_indices(self) -> list[int]:
-        available_columns = set(range(self.m))
-        found_columns = {x[1] for x in self.galaxy_coordinates}
-        return list(available_columns - found_columns)
+    def _expand_dim(self, dimension: int, expansion_rate: int=1):
+        empty_indices = sorted(self._empty_dimension_indices(dimension=dimension)) + [sys.maxsize]
+        accumulator = 0
+        threshold_index = 0
+
+        self.galaxy_coordinates.sort(key=lambda x: x[dimension])
+        for i, galaxy in enumerate(self.galaxy_coordinates):
+            if galaxy[dimension] > empty_indices[threshold_index]:
+                accumulator += expansion_rate
+                threshold_index += 1
+            self.galaxy_coordinates[i][dimension] += accumulator
+
+        self.set_dimension_length(dimension, self.get_dimension_length(dimension) + accumulator)
+        return None
 
     def expand(self, expansion_rate=1) -> None:
-        empty_rows_indices = sorted(self.empty_row_indices()) + [sys.maxsize]
-        empty_column_indices = sorted(self.empty_column_indices()) + [sys.maxsize]
-        row_accumulator = 0
-        column_accumulator = 0
-        threshold_index = 0
-        self.galaxy_coordinates.sort(key=lambda x: x[0])
-        for i, galaxy in enumerate(self.galaxy_coordinates):
-            if galaxy[0] > empty_rows_indices[threshold_index]:
-                row_accumulator += expansion_rate
-                threshold_index += 1
-            self.galaxy_coordinates[i][0] += row_accumulator
-
-        threshold_index = 0
-        self.galaxy_coordinates.sort(key=lambda x: x[1])
-        for i, galaxy in enumerate(self.galaxy_coordinates):
-            if galaxy[1] > empty_column_indices[threshold_index]:
-                column_accumulator += expansion_rate
-                threshold_index += 1
-            self.galaxy_coordinates[i][1] += column_accumulator
-        print(self.galaxy_coordinates)
-        self.n += row_accumulator
-        self.m += column_accumulator
+        for i in range(2):
+            self._expand_dim(dimension=i, expansion_rate=expansion_rate)
         return None
 
 
@@ -80,7 +82,7 @@ def main():
     tests()
 
     t = galaxy_brain_sum(read_lines("day_11_1_input.txt"))
-
+    print(t)
 
 if __name__ == "__main__":
     main()
