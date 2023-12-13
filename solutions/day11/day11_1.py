@@ -31,24 +31,27 @@ class Cosmos:
         found_columns = {x[1] for x in self.galaxy_coordinates}
         return list(available_columns - found_columns)
 
-    def expand(self) -> None:
+    def expand(self, expansion_rate=1) -> None:
         empty_rows_indices = sorted(self.empty_row_indices()) + [sys.maxsize]
         empty_column_indices = sorted(self.empty_column_indices()) + [sys.maxsize]
         row_accumulator = 0
         column_accumulator = 0
-
+        threshold_index = 0
         self.galaxy_coordinates.sort(key=lambda x: x[0])
         for i, galaxy in enumerate(self.galaxy_coordinates):
-            if galaxy[0] > empty_rows_indices[row_accumulator]:
-                row_accumulator += 1
+            if galaxy[0] > empty_rows_indices[threshold_index]:
+                row_accumulator += expansion_rate
+                threshold_index += 1
             self.galaxy_coordinates[i][0] += row_accumulator
 
+        threshold_index = 0
         self.galaxy_coordinates.sort(key=lambda x: x[1])
         for i, galaxy in enumerate(self.galaxy_coordinates):
-            if galaxy[1] > empty_column_indices[column_accumulator]:
-                column_accumulator += 1
+            if galaxy[1] > empty_column_indices[threshold_index]:
+                column_accumulator += expansion_rate
+                threshold_index += 1
             self.galaxy_coordinates[i][1] += column_accumulator
-
+        print(self.galaxy_coordinates)
         self.n += row_accumulator
         self.m += column_accumulator
         return None
@@ -58,9 +61,9 @@ def coordinate_distance(coordinate1: list[int, int], coordinate2: list[int, int]
     return abs(coordinate1[0] - coordinate2[0]) + abs(coordinate1[1] - coordinate2[1])
 
 
-def galaxy_brain_sum(lines: list[str]) -> int:
+def galaxy_brain_sum(lines: list[str], expansion_rate=1) -> int:
     cosmos = Cosmos(lines)
-    cosmos.expand()
+    cosmos.expand(expansion_rate=expansion_rate)
     galaxy_coordinates = cosmos.galaxy_coordinates
     total = sum(coordinate_distance(coordinate1, coordinate2)
                 for coordinate1, coordinate2 in combinations(galaxy_coordinates, 2))
@@ -77,7 +80,6 @@ def main():
     tests()
 
     t = galaxy_brain_sum(read_lines("day_11_1_input.txt"))
-    print(t)
 
 
 if __name__ == "__main__":
