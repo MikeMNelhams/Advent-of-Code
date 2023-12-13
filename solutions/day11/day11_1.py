@@ -84,5 +84,6 @@ def main():
     t = galaxy_brain_sum(read_lines("day_11_1_input.txt"))
     print(t)
 
+
 if __name__ == "__main__":
     main()
