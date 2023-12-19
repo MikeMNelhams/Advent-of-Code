@@ -46,11 +46,34 @@ class MirrorMapper:
             below_index -= 1
         return True
 
-    def mirror_summary(self) -> int:
+    def is_smudged_mirrored(self, index: int, dimension: int) -> bool:
+        dim_length = self.shape(dimension)
+        if index > dim_length - 2:
+            return False
+
+        above_index = index + 1
+        below_index = index
+        incorrect_count = 0
+        while below_index >= 0 and above_index < dim_length:
+            above = self.get_rock_row_or_column(above_index, dimension)
+            below = self.get_rock_row_or_column(below_index, dimension)
+            if above != below:
+                incorrect_count = sum(1 if a != b else 0 for a, b in zip(above, below))
+            if incorrect_count > 1:
+                return False
+            above_index += 1
+            below_index -= 1
+        return incorrect_count == 1
+
+    def mirror_summary(self, smudged: bool=False) -> int:
+        is_reflected = self.is_mirrored
+        if smudged:
+            is_reflected = self.is_smudged_mirrored
+
         for dimension in range(2):
             dimension_length = self.shape(dimension)
             for i in range(dimension_length):
-                if self.is_mirrored(i, dimension):
+                if is_reflected(i, dimension):
                     return self.dimension_weights[dimension] * (i + 1)
 
         raise ZeroDivisionError
@@ -63,7 +86,6 @@ def read_puzzles(lines: list[str]) -> list[list[str]]:
     start = 0
     for index in indices:
         puzzle = lines[start:index]
-        print(puzzle)
         puzzles.append(puzzle)
         start = index + 1
 
@@ -111,7 +133,6 @@ def main():
 
     total = sum(MirrorMapper(puzzle).mirror_summary() for puzzle in puzzles)
     print(total)
-
 
 
 if __name__ == "__main__":
