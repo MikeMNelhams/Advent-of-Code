@@ -1,10 +1,11 @@
 from handy_dandy_library.file_processing import read_lines
-from collections import deque
+from collections import deque, defaultdict
 from abc import ABC, abstractmethod
 from typing import Callable
 
 
 type PulseOutput = list[Pulse]
+type SearchParams = list[tuple[str, int]]
 
 
 class Pulse:
@@ -116,7 +117,7 @@ class Conjunction(PulseModule):
 
     @property
     def state(self) -> int:
-        return sum(pulse_received << i for i, pulse_received in self.pulses_received)
+        return sum(pulse_received << i for i, pulse_received in enumerate(self.pulses_received.values()))
 
 
 class PulseModuleCreator:
@@ -149,6 +150,8 @@ class PulseModuleCreator:
 
 
 class PulseProcessor:
+    MAX_ITERS = 100_000
+
     def __init__(self, pulse_modules: list[PulseModule]):
         self.pulse_module_map = {pulse_module.name: pulse_module
                                  for pulse_module in pulse_modules}
@@ -157,6 +160,8 @@ class PulseProcessor:
         self.pulse_deque: deque[Pulse] = deque()
         self.low_pulses_count = 0
         self.high_pulses_count = 0
+        self.number_of_button_presses = 0
+        self.cycle_indices = defaultdict(list)
         self.update_conjunction_modules()
 
     @property
@@ -185,29 +190,77 @@ class PulseProcessor:
         return self.low_pulses_count * self.high_pulses_count
 
     def push_the_button(self) -> None:
+        self.number_of_button_presses += 1
         self.pulse_deque.append(Pulse(0, "button", "MightyButtonPusher"))
         self.low_pulses_count -= 1  # The button press doesn't count as a pulse
-        self.__process_stack_until_empty()
+        self.__process_stack_until_empty_no_search()
         return None
 
-    def __process_stack_until_empty(self) -> None:
+    def __push_the_button_searching_for(self, search_params: list[tuple[str, int]]) -> None:
+        self.number_of_button_presses += 1
+        self.pulse_deque.append(Pulse(0, "button", "MightyButtonPusher"))
+        self.low_pulses_count -= 1  # The button press doesn't count as a pulse
+        self.__process_stack_until_empty_with_search(search_params)
+        return None
+
+    def __process_stack_until_empty_no_search(self) -> None:
         pulse = NULL_PULSE
         while self.pulse_deque:
             pulse: Pulse = self.pulse_deque.popleft()
             self.increment_pulse_count(pulse)
-            process = self.pulse_module_map.get(pulse.target, NullModule(pulse.source, [])).process
-            new_pulses = process(pulse)
+            target_module = self.module_by_name(pulse)
+            new_pulses = target_module.process(pulse)
+
+            if new_pulses:
+                for _pulse in new_pulses:
+                    self.pulse_deque.append(_pulse)
+
+    def __process_stack_until_empty_with_search(self, search_params: SearchParams) -> None:
+        pulse = NULL_PULSE
+        while self.pulse_deque:
+            pulse: Pulse = self.pulse_deque.popleft()
+            self.increment_pulse_count(pulse)
+            self.record_any_matches(search_params)
+            target_module = self.module_by_name(pulse)
+            new_pulses = target_module.process(pulse)
             if new_pulses:
                 for _pulse in new_pulses:
                     self.pulse_deque.append(_pulse)
         return None
 
+    def record_any_matches(self, search_params: SearchParams) -> None:
+        for search_param in search_params:
+            match_found = self.pulse_module_map[search_param[0]].state == search_param[1]
+            button_number_unrecorded = self.number_of_button_presses not in self.cycle_indices[search_param[0]]
+            if match_found and button_number_unrecorded:
+                self.cycle_indices[search_param[0]].append(self.number_of_button_presses)
+        return None
+
+    def module_by_name(self, pulse: Pulse) -> PulseModule:
+        target_module = NullModule(pulse.target, [])
+        if pulse.target in self.pulse_module_map:
+            target_module = self.pulse_module_map[pulse.target]
+        else:
+            self.pulse_module_map[pulse.target] = target_module
+        return target_module
+
     def increment_pulse_count(self, pulse: Pulse) -> None:
         if pulse.signal == 0:
             self.low_pulses_count += 1
-        else:
-            self.high_pulses_count += 1
+            return None
+        self.high_pulses_count += 1
         return None
+
+    def cycle_lengths(self, search_params: list[tuple[str, int]]) -> list[int]:
+        for i in range(self.MAX_ITERS):
+            all_cycles_found = True
+            self.__push_the_button_searching_for(search_params)
+            for j, cycle_indices in enumerate(self.cycle_indices.values()):
+                if len(cycle_indices) != 2:
+                    all_cycles_found = False
+            if all_cycles_found:
+                return [cycle_indices[1] - cycle_indices[0] + 1 for cycle_indices in self.cycle_indices.values()]
+        raise ZeroDivisionError
 
 
 def test1():
