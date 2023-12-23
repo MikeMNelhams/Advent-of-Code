@@ -204,7 +204,6 @@ class PulseProcessor:
         return None
 
     def __process_stack_until_empty_no_search(self) -> None:
-        pulse = NULL_PULSE
         while self.pulse_deque:
             pulse: Pulse = self.pulse_deque.popleft()
             self.increment_pulse_count(pulse)
@@ -216,7 +215,6 @@ class PulseProcessor:
         return None
 
     def __process_stack_until_empty_with_search(self, search_params: SearchParams) -> None:
-        pulse = NULL_PULSE
         while self.pulse_deque:
             pulse: Pulse = self.pulse_deque.popleft()
             self.increment_pulse_count(pulse)
