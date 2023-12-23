@@ -210,10 +210,10 @@ class PulseProcessor:
             self.increment_pulse_count(pulse)
             target_module = self.module_by_name(pulse)
             new_pulses = target_module.process(pulse)
-
             if new_pulses:
                 for _pulse in new_pulses:
                     self.pulse_deque.append(_pulse)
+        return None
 
     def __process_stack_until_empty_with_search(self, search_params: SearchParams) -> None:
         pulse = NULL_PULSE
@@ -251,13 +251,14 @@ class PulseProcessor:
         self.high_pulses_count += 1
         return None
 
-    def cycle_lengths(self, search_params: list[tuple[str, int]]) -> list[int]:
-        for i in range(self.MAX_ITERS):
-            all_cycles_found = True
+    def cycle_lengths(self, search_params: SearchParams) -> list[int]:
+        for _ in range(self.MAX_ITERS):
             self.__push_the_button_searching_for(search_params)
+            all_cycles_found = True
             for j, cycle_indices in enumerate(self.cycle_indices.values()):
                 if len(cycle_indices) != 2:
                     all_cycles_found = False
+                    break
             if all_cycles_found:
                 return [cycle_indices[1] - cycle_indices[0] + 1 for cycle_indices in self.cycle_indices.values()]
         raise ZeroDivisionError
