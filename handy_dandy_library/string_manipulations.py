@@ -35,6 +35,10 @@ def parse_ints(phrase: str) -> list[int]:
     return [int(substring) for substring in phrase.split(' ') if substring != '']
 
 
+def pad_with_horizontal_rules(x: str, rule_char='-', rule_length: int = 50):
+    horizontal_rule = rule_char * rule_length
+    return f"{horizontal_rule}\n{x}\n{horizontal_rule}"
+
 def parse_int_ignore_spaces(phrase: str) -> int:
     return int(phrase.replace(' ', ''))
 
