@@ -177,9 +177,9 @@ class MirrorGrid:
         invalid_coord = x_coord_is_invalid or y_coord_is_invalid
         return invalid_coord
 
-    def energized_grid(self) -> EnergyGrid:
+    def energized_grid(self, start_light: Light = Light(Vector((-1, 0)), Vector.RIGHT())) -> EnergyGrid:
         energy_grid = EnergyGrid(self.n, self.m)
-        lights_to_simulate = deque([Light(Vector((-1, 0)), Vector.RIGHT())])
+        lights_to_simulate = deque([start_light])
         while lights_to_simulate:
             light = lights_to_simulate.popleft()
             light = light.moved_forwards1
@@ -191,6 +191,34 @@ class MirrorGrid:
                 for new_light in lights:
                     lights_to_simulate.append(new_light)
         return energy_grid
+
+    def max_energy(self) -> EnergyGrid:
+        max_energy = 0
+        start_direction = Vector.DOWN()
+        # Top bit
+        for i in range(self.m):
+            energy_grid = self.energized_grid(Light(Vector((i, -1)), start_direction))
+            max_energy = max(max_energy, energy_grid.total_energy)
+
+        # Left bit
+        start_direction = Vector.RIGHT()
+        for i in range(self.n):
+            energy_grid = self.energized_grid(Light(Vector((-1, i)), start_direction))
+            max_energy = max(max_energy, energy_grid.total_energy)
+
+        # Right bit
+        start_direction = Vector.LEFT()
+        for i in range(self.n):
+            energy_grid = self.energized_grid(Light(Vector((self.m, i)), start_direction))
+            max_energy = max(max_energy, energy_grid.total_energy)
+
+        # Bottom bit
+        start_direction = Vector.UP()
+        for i in range(self.m):
+            energy_grid = self.energized_grid(Light(Vector((i, self.n)), start_direction))
+            max_energy = max(max_energy, energy_grid.total_energy)
+
+        return max_energy
 
 
 def tests():
