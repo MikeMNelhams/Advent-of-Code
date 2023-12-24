@@ -1,7 +1,6 @@
 from __future__ import annotations
 from handy_dandy_library.file_processing import read_lines
 from handy_dandy_library.string_manipulations import pad_with_horizontal_rules
-from collections import deque
 
 
 MIRROR_ENCODING = {'.': 0, '|': 1, '-': 2, '\\': 3, '/': 4}
@@ -51,23 +50,11 @@ class Vector(UnitVector):
 
     @property
     def rotated_right(self) -> Vector:
-        if self.direction_name == "up":
-            return Vector.RIGHT()
-        if self.direction_name == "right":
-            return Vector.DOWN()
-        if self.direction_name == "down":
-            return Vector.LEFT()
-        return Vector.UP()
+        return Vector((self.y * -abs(self.y), self.x))
 
     @property
     def rotated_left(self) -> Vector:
-        if self.direction_name == "up":
-            return Vector.LEFT()
-        if self.direction_name == "left":
-            return Vector.DOWN()
-        if self.direction_name == "down":
-            return Vector.RIGHT()
-        return Vector.UP()
+        return Vector((self.y, self.x * -abs(self.x)))
 
 
 class Light:
@@ -105,9 +92,8 @@ class Light:
         return Light(self.coordinate + self.direction, self.direction)
 
     def new_lights_according_to_mirror_code(self, mirror_code: int) -> list[Light]:
-        # Swap this logic to a while + dict approach.
+        # TODO Swap this logic to a while + dict approach.
         if mirror_code == 0:
-            # Same direction
             return [self.copy()]
         if mirror_code == 1:
             if self.direction.direction_name in ("left", "right"):
@@ -179,9 +165,9 @@ class MirrorGrid:
 
     def energized_grid(self, start_light: Light = Light(Vector((-1, 0)), Vector.RIGHT())) -> EnergyGrid:
         energy_grid = EnergyGrid(self.n, self.m)
-        lights_to_simulate = deque([start_light])
+        lights_to_simulate = [start_light]
         while lights_to_simulate:
-            light = lights_to_simulate.popleft()
+            light = lights_to_simulate.pop()
             light = light.moved_forwards1
             direction_code = Vector.UNIT_VECTOR_CODENAMES[light.direction.direction_name]
             if not self.light_outside_grid(light) and not energy_grid.grid[light.y][light.x][direction_code]:
@@ -194,31 +180,30 @@ class MirrorGrid:
 
     def max_energy(self) -> EnergyGrid:
         max_energy = 0
-        start_direction = Vector.DOWN()
-        # Top bit
-        for i in range(self.m):
-            energy_grid = self.energized_grid(Light(Vector((i, -1)), start_direction))
-            max_energy = max(max_energy, energy_grid.total_energy)
+        iter_thruples = ((self.__start_top_light, self.m, Vector.DOWN()),
+                         (self.__start_right_light, self.n, Vector.RIGHT()),
+                         (self.__start_left_light, self.n, Vector.LEFT()),
+                         (self.__start_up_light, self.m, Vector.UP()))
 
-        # Left bit
-        start_direction = Vector.RIGHT()
-        for i in range(self.n):
-            energy_grid = self.energized_grid(Light(Vector((-1, i)), start_direction))
-            max_energy = max(max_energy, energy_grid.total_energy)
-
-        # Right bit
-        start_direction = Vector.LEFT()
-        for i in range(self.n):
-            energy_grid = self.energized_grid(Light(Vector((self.m, i)), start_direction))
-            max_energy = max(max_energy, energy_grid.total_energy)
-
-        # Bottom bit
-        start_direction = Vector.UP()
-        for i in range(self.m):
-            energy_grid = self.energized_grid(Light(Vector((i, self.n)), start_direction))
-            max_energy = max(max_energy, energy_grid.total_energy)
-
+        for thruple in iter_thruples:
+            for i in range(thruple[1]):
+                energy_grid = self.energized_grid(thruple[0](i, thruple[2]))
+                max_energy = max(max_energy, energy_grid.total_energy)
         return max_energy
+
+    @staticmethod
+    def __start_top_light(i, start_direction) -> Light:
+        return Light(Vector((i, -1)), start_direction)
+
+    @staticmethod
+    def __start_right_light(i, start_direction) -> Light:
+        return Light(Vector((-1, i)), start_direction)
+
+    def __start_left_light(self, i, start_direction) -> Light:
+        return Light(Vector((self.m, i)), start_direction)
+
+    def __start_up_light(self, i, start_direction) -> Light:
+        return Light(Vector((i, self.n)), start_direction)
 
 
 def tests():
