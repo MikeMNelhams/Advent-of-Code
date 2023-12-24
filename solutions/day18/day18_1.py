@@ -21,6 +21,7 @@ class UnitVectors:
 class Vector:
     DIRECTION_TO_UNIT_VECTORS = {'U': UnitVectors.UP, 'R': UnitVectors.RIGHT,
                                  'D': UnitVectors.DOWN, 'L': UnitVectors.LEFT}
+    INT_TO_DIRECTION = ['R', 'D', 'L', 'U']
 
     def __init__(self, values: tuple[int, int]):
         if len(values) != 2:
@@ -56,6 +57,13 @@ class Vector:
         return cls(cls.DIRECTION_TO_UNIT_VECTORS[direction]) * magnitude
 
     @classmethod
+    def from_hexadecimal_line(cls, line: str):
+        line_thirds = line.split(' ')
+        color = line_thirds[2][2:-1]
+        direction = cls.INT_TO_DIRECTION[int(color[-1])]
+        return cls.from_direction_magnitude(direction, int(color[:-1], 16))
+
+    @classmethod
     def zero(cls):
         return cls((0, 0))
 
@@ -76,6 +84,10 @@ class ColorVector:
         color = line_thirds[2]
         direction_vector = Vector.from_direction_magnitude(direction, magnitude)
         return cls(direction_vector, color)
+
+    @classmethod
+    def from_line_but_hexadecimal_twist(cls, line: str):
+        return cls(Vector.from_hexadecimal_line(line), '')
 
 
 class Shape:
@@ -128,7 +140,7 @@ def read_coordinates(lines: list[str]) -> list[ColorVector]:
 
 
 def tests():
-    color_vectors = read_coordinates(read_lines("day_20_1_test_input1.txt"))
+    color_vectors = read_coordinates(read_lines("day_18_1_test_input1.txt"))
     print(color_vectors)
 
     digger = Digger(color_vectors)
@@ -138,7 +150,7 @@ def tests():
 def main():
     tests()
 
-    color_vectors = read_coordinates(read_lines("day_20_1_input.txt"))
+    color_vectors = read_coordinates(read_lines("day_18_1_input.txt"))
     digger = Digger(color_vectors)
     t = digger.area
     print(t)
