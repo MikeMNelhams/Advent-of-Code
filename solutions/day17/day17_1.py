@@ -12,13 +12,18 @@ class UnitVector:
     def __init__(self, values: tuple[int, int]):
         self.x = values[0]
         self.y = values[1]
-        self.direction_name = self.UNIT_VECTOR_NAMES_FROM_VECTOR.get(values, "not_unit_vector")
 
     def __eq__(self, other: UnitVector) -> bool:
+        if not isinstance(other, UnitVector):
+            return False
         return self.x == other.x and self.y == other.y
 
     def __repr__(self) -> str:
         return f"({self.x},{self.y})"
+
+    @property
+    def direction_name(self) -> str:
+        return self.UNIT_VECTOR_NAMES_FROM_VECTOR.get((self.x, self.y), "not_unit_vector")
 
     @classmethod
     def UP(cls):
@@ -78,9 +83,6 @@ class Square:
             if parent.forward_direction == self.forward_direction:
                 self.forwards_count = self.parent.forwards_count + 1
 
-    def __eq__(self, other: Square) -> bool:
-        return self.coordinate == other.coordinate and self.forwards_count == other.forwards_count
-
     def __repr__(self) -> str:
         return f"{make_blue("Sqr")}({self.coordinate}, (g, h, f): ({self.heat_loss},{self.distance_to_end_node},{self.f}))"
 
@@ -113,7 +115,7 @@ class LavaGrid:
         self.distances_to_end_node = self.__distances_to_end_node(grid)
 
     def __edge_checks(self, coordinate: Vector) -> (bool, bool, bool, bool):
-        return coordinate.x > 0, coordinate.y > 0, coordinate.y < self.m - 1, coordinate.x < self.n - 1
+        return coordinate.y < self.m - 1, coordinate.x < self.n - 1, coordinate.x > 0, coordinate.y > 0
 
     def __repr__(self) -> str:
         lines = '\n'.join(['\t' + ''.join(str(char) for char in line) for line in self.grid])
@@ -134,18 +136,19 @@ class LavaGrid:
         return 0 <= coordinate.x <= self.n and 0 <= coordinate.y <= self.m
 
     def potential_squares(self, square: Square) -> list[Square]:
-        previous_square_coordinate = Vector((-1, -1))  # Will never be equal to any coordinate within the grid
+        previous_square_coordinate = None
         previous_square = square.parent
         if previous_square is not None:
             previous_square_coordinate = previous_square.coordinate
         coordinate = square.coordinate
-        coordinate_indices_to_check = ((coordinate.x - 1, coordinate.y),
-                                       (coordinate.x, coordinate.y - 1),
-                                       (coordinate.x, coordinate.y + 1),
-                                       (coordinate.x + 1, coordinate.y))
+        coordinate_indices = ((coordinate.x, coordinate.y + 1),
+                              (coordinate.x + 1, coordinate.y),
+                              (coordinate.x - 1, coordinate.y),
+                              (coordinate.x, coordinate.y - 1),
+                              )
         edge_checks = self.__edge_checks(coordinate)
         squares = []
-        for edge_check, coordinate_indices in zip(edge_checks, coordinate_indices_to_check):
+        for edge_check, coordinate_indices in zip(edge_checks, coordinate_indices):
             potential_coordinate = Vector(coordinate_indices)
             if potential_coordinate != previous_square_coordinate and edge_check:
                 next_square = self.square_from_grid(potential_coordinate, parent=square)
@@ -205,13 +208,30 @@ class LavaGrid:
 
 
 def tests1():
+    up = Vector.UP()
+    left = Vector.LEFT()
+    down = Vector.DOWN()
+    right = Vector.RIGHT()
+
+    assert right.rotated_right == down
+    assert down.rotated_right == left
+    assert left.rotated_right == up
+    assert up.rotated_right == right
+
+    assert up.rotated_left == left
+    assert left.rotated_left == down
+    assert down.rotated_left == right
+    assert right.rotated_left == up
+
+
+def tests2():
     lava_grid = LavaGrid.from_lines(read_lines("day_17_1_test_input.txt"))
     print(lava_grid)
     e, path = lava_grid.minimal_route_heat_loss()
     assert e == 102
 
 
-def tests2():
+def tests3():
     lava_grid = LavaGrid.from_lines(read_lines("day_17_1_test_input2.txt"))
 
     e, path = lava_grid.minimal_route_heat_loss()
@@ -219,8 +239,8 @@ def tests2():
 
 
 def main():
-    tests1()
     tests2()
+    tests3()
 
     # lava_grid = LavaGrid.from_lines(read_lines("day_17_1_input.txt"))
     # print(lava_grid)
