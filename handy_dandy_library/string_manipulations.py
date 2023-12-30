@@ -7,6 +7,18 @@ DIGIT_NUMERAL_REPLACEMENTS = {"one": "1", "two": "2", "three": "3", "four": "4",
                               "six": "6", "seven": "7", "eight": "8", "nine": "9"}
 
 
+class PrintColors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
 def convert_numeric_in_text_to_digits(phrase: str) -> str:
     """ One pass literal numeric to digit numeric """
     digit_replacements_escaped = map(re.escape, DIGIT_NUMERAL_REPLACEMENTS)
@@ -39,8 +51,13 @@ def pad_with_horizontal_rules(x: str, rule_char='-', rule_length: int = 50):
     horizontal_rule = rule_char * rule_length
     return f"{horizontal_rule}\n{x}\n{horizontal_rule}"
 
+
 def parse_int_ignore_spaces(phrase: str) -> int:
     return int(phrase.replace(' ', ''))
+
+
+def make_blue(x: str) -> str:
+    return f"{PrintColors.OKBLUE}{x}{PrintColors.ENDC}"
 
 
 if __name__ == "__main__":
