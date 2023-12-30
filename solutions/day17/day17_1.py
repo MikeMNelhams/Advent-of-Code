@@ -94,6 +94,9 @@ class Square:
     def __repr__(self) -> str:
         return f"{make_blue("Sqr")}({self.coordinate}, (g, h, f): ({self.heat_loss},{self.distance_to_end_node},{self.f}))"
 
+    def __lt__(self, other: Square) -> bool:
+        return self.f < other.f or (self.f == other.f and self.heat_loss < other.heat_loss) or ()
+
     @property
     def f(self) -> int:
         return self.heat_loss + self.distance_to_end_node
@@ -140,9 +143,6 @@ class LavaGrid:
         grid = [[int(char) for char in line] for line in lines]
         return cls(grid)
 
-    def is_inside_bounds(self, coordinate: Vector) -> bool:
-        return 0 <= coordinate.x <= self.n and 0 <= coordinate.y <= self.m
-
     def potential_squares(self, square: Square) -> list[Square]:
         previous_square_coordinate = None
         previous_square = square.parent
@@ -181,21 +181,15 @@ class LavaGrid:
         start_square = self.square_from_grid(Vector((0, 0)), parent=None)
         start_square.heat_loss = 0  # We don't include the starting heat loss
 
-        open_squares = [start_square]
+        open_squares1 = [start_square]
+        open_squares = PriorityQueue()
+        open_squares.put(start_square)
+
         final_coordinate = Vector((self.n - 1, self.m - 1))
         checked_grid = [[False for _ in range(self.m)] for _ in range(self.n)]
 
-        while open_squares:
-            # TODO better data structure for popping from the open_squares? PriorityQueue/BinaryTree Heap?
-            square = open_squares[0]
-            pop_index = 0
-
-            for i, element in enumerate(open_squares):
-                if element.f < square.f:
-                    pop_index = i
-                    square = element
-
-            square = open_squares.pop(pop_index)
+        while open_squares1:
+            square = open_squares.get()
             if square.coordinate == final_coordinate:
                 return square.heat_loss, square.path_to_root_parent()
 
@@ -207,11 +201,7 @@ class LavaGrid:
                 if checked_grid[next_square_coord.x][next_square_coord.y]:
                     continue
 
-                for open_square in open_squares:
-                    if potential_next_square.coordinate == open_square.coordinate and potential_next_square.heat_loss > open_square.heat_loss:
-                        continue
-
-                open_squares.append(potential_next_square)
+                open_squares.put(potential_next_square)
 
 
 def tests1():
@@ -236,23 +226,28 @@ def tests2():
     lava_grid = LavaGrid.from_lines(read_lines("day_17_1_test_input.txt"))
     print(lava_grid)
     e, path = lava_grid.minimal_route_heat_loss()
+    for p in path:
+        print(p)
     assert e == 102
 
 
 def tests3():
     # Profiling (493 answer)
-    cProfile.run("re.compile(LavaGrid.from_lines(read_lines(\"day_17_1_test_input2.txt\")).minimal_route_heat_loss())")
+    # cProfile.run("re.compile(LavaGrid.from_lines(read_lines(\"day_17_1_test_input2.txt\")).minimal_route_heat_loss())")
+    lava_grid = LavaGrid.from_lines(read_lines("day_17_1_test_input2.txt"))
+    e, path = lava_grid.minimal_route_heat_loss()
+    assert e == 493
 
 
 def main():
     tests2()
     tests3()
 
-    # lava_grid = LavaGrid.from_lines(read_lines("day_17_1_input.txt"))
-    # print(lava_grid)
-    #
-    # e, path = lava_grid.minimal_route_heat_loss()
-    # print(e)
+    lava_grid = LavaGrid.from_lines(read_lines("day_17_1_input.txt"))
+    print(lava_grid)
+
+    e, path = lava_grid.minimal_route_heat_loss()
+    print(e)
 
 
 if __name__ == "__main__":
