@@ -2,6 +2,12 @@ from __future__ import annotations
 from handy_dandy_library.file_processing import read_lines
 from handy_dandy_library.string_manipulations import pad_with_horizontal_rules, make_blue
 
+from queue import PriorityQueue
+
+import cProfile
+import re
+
+
 type Grid = list[list[int]]
 
 
@@ -69,13 +75,15 @@ class Vector(UnitVector):
 
 
 class Square:
+    ZERO = Vector.zero()
+
     def __init__(self, coordinate: Vector, distance_to_end_node: int, heat_loss: int, parent: Square = None):
         self.coordinate = coordinate
         self.parent = parent
         self.distance_to_end_node = distance_to_end_node
 
         self.heat_loss = heat_loss
-        self.forward_direction = Vector.zero()
+        self.forward_direction = self.ZERO
         self.forwards_count = 0
         if parent is not None:
             self.heat_loss = heat_loss + parent.heat_loss
@@ -90,13 +98,13 @@ class Square:
     def f(self) -> int:
         return self.heat_loss + self.distance_to_end_node
 
-    def path_to_root_parent(self) -> list[Vector]:
+    def path_to_root_parent(self) -> tuple[Vector]:
         parent = self.parent
         path = [self]
         while parent is not None:
             path.append(parent)
             parent = parent.parent
-        return list(reversed(path))
+        return tuple(reversed(path))
 
     def is_valid_next(self, next_coordinate: Vector) -> bool:
         if self.parent is None:
@@ -122,7 +130,7 @@ class LavaGrid:
         return pad_with_horizontal_rules(lines)
 
     @staticmethod
-    def __distances_to_end_node(grid) -> list[list[int]]:
+    def __distances_to_end_node(grid: Grid) -> Grid:
         m = len(grid[0])
         n = len(grid)
         return [[m - j + n - i - 2 for j in range(m)] for i in range(n)]
@@ -175,7 +183,6 @@ class LavaGrid:
 
         open_squares = [start_square]
         final_coordinate = Vector((self.n - 1, self.m - 1))
-
         checked_grid = [[False for _ in range(self.m)] for _ in range(self.n)]
 
         while open_squares:
@@ -225,6 +232,7 @@ def tests1():
 
 
 def tests2():
+    # Correctness check
     lava_grid = LavaGrid.from_lines(read_lines("day_17_1_test_input.txt"))
     print(lava_grid)
     e, path = lava_grid.minimal_route_heat_loss()
@@ -232,10 +240,8 @@ def tests2():
 
 
 def tests3():
-    lava_grid = LavaGrid.from_lines(read_lines("day_17_1_test_input2.txt"))
-
-    e, path = lava_grid.minimal_route_heat_loss()
-    assert e == 493
+    # Profiling (493 answer)
+    cProfile.run("re.compile(LavaGrid.from_lines(read_lines(\"day_17_1_test_input2.txt\")).minimal_route_heat_loss())")
 
 
 def main():
