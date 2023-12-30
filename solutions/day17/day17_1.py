@@ -181,14 +181,13 @@ class LavaGrid:
         start_square = self.square_from_grid(Vector((0, 0)), parent=None)
         start_square.heat_loss = 0  # We don't include the starting heat loss
 
-        open_squares1 = [start_square]
         open_squares = PriorityQueue()
         open_squares.put(start_square)
 
         final_coordinate = Vector((self.n - 1, self.m - 1))
         checked_grid = [[False for _ in range(self.m)] for _ in range(self.n)]
 
-        while open_squares1:
+        while not open_squares.empty():
             square = open_squares.get()
             if square.coordinate == final_coordinate:
                 return square.heat_loss, square.path_to_root_parent()
