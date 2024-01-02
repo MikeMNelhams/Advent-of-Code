@@ -41,6 +41,9 @@ class Vector(UnitVector):
     def __sub__(self, other: Vector) -> Vector:
         return Vector((self.x - other.x, self.y - other.y))
 
+    def __mod__(self, other: int) -> Vector:
+        return Vector((self.x % other, self.y % other))
+
     @classmethod
     def zero(cls):
         return cls((0, 0))
@@ -48,7 +51,7 @@ class Vector(UnitVector):
 
 class Garden:
     encodings = {'.': 0, '#': 1, START_CHAR: 0}
-    reverse_encodings = {0: '.', 1: '#'}
+    reverse_encodings = {0: '.', 1: '#', 2: 'O', 3: 'S'}
     UP = Vector((0, -1))
     RIGHT = Vector((1, 0))
     DOWN = Vector((0, 1))
@@ -59,9 +62,6 @@ class Garden:
         self.n = len(encoded_grid)
         self.m = len(encoded_grid[0])
         self.start_square = start_square
-
-    def __repr__(self):
-        return '\n'.join([''.join([self.reverse_encodings[x] for x in line]) for line in self.grid])
 
     @classmethod
     def from_lines(cls, lines: list[str]):
@@ -76,26 +76,30 @@ class Garden:
         encoded_grid = [[cls.encodings[char] for char in line] for line in lines]
         return cls(encoded_grid, start_square)
 
+    def __repr__(self):
+        return '\n'.join([''.join([self.reverse_encodings[x] for x in line]) for line in self.grid])
+
+    def is_rock(self, coordinate: Vector) -> bool:
+        return self.grid[coordinate.x % self.n][coordinate.y % self.m]
+
     def neighbours(self, coordinate: Vector) -> set[Vector]:
         # Right, Up, Down, Left
         potential_neighbours = (coordinate + self.RIGHT,
                                 coordinate + self.UP,
                                 coordinate + self.DOWN,
                                 coordinate + self.LEFT)
-        coord_checks = (coordinate.x < self.m - 1 and not self.grid[coordinate.x + 1][coordinate.y],
-                        coordinate.y > 0 and not self.grid[coordinate.x][coordinate.y - 1],
-                        coordinate.y < self.n - 1 and not self.grid[coordinate.x][coordinate.y + 1],
-                        coordinate.x > 0 and not self.grid[coordinate.x - 1][coordinate.y])
+        coord_checks = (not self.is_rock(potential_neighbours[0]),
+                        not self.is_rock(potential_neighbours[1]),
+                        not self.is_rock(potential_neighbours[2]),
+                        not self.is_rock(potential_neighbours[3]))
 
-        valid_neighbours = {neighbour for neighbour, is_valid in zip(potential_neighbours, coord_checks) if is_valid}
+        valid_neighbours = {neighbour for i, (neighbour, is_valid) in enumerate(zip(potential_neighbours, coord_checks)) if is_valid}
         return valid_neighbours
 
-    def reachable_plots(self, number_of_steps: int) -> list[Vector]:
-        # Possible optimisation, after long enough it will cycle. If there's a cycle, you can check and use:
-        # After k > p for some arbitrary cycle constant p:
-        #   len(num_reachable(garden, k)) = len(num_reachable(garden, k+2))
-        #   len(num_reachable(garden, k+1)) = len(num_reachable(garden, k+3))
+    def reachable_plots(self, number_of_steps: int, starting_square: Vector=Vector((-1, -1))) -> list[Vector]:
         reachable_plots = {self.start_square}
+        if starting_square != Vector((-1, -1)):
+            reachable_plots = {starting_square}
         for _ in range(number_of_steps):
             coords_to_add = set()
             for coordinate in reachable_plots:
@@ -103,12 +107,29 @@ class Garden:
             reachable_plots = coords_to_add
         return list(reachable_plots)
 
+    def update_to_circles(self, coordinates: list[Vector]) -> None:
+        for coordinate in coordinates:
+            self.grid[coordinate.x][coordinate.y] = 2
+        return None
+
+    def update_to_s(self, coordinate: list[Vector]) -> None:
+        for coordinate in coordinate:
+            self.grid[coordinate.x][coordinate.y] = 3
+        return None
+
+    def reachable_plot_count(self, number_of_steps: int, starting_square: Vector=Vector((-1, -1))) -> list[Vector]:
+        return len(self.reachable_plots(number_of_steps, starting_square))
+
+    def filter_by_edges(self, reachable_plots: list[Vector]) -> list[Vector]:
+        return [reachable_plot for reachable_plot in reachable_plots if (reachable_plot.x == 0 or reachable_plot.y == 0 or reachable_plot.x == self.n-1 or reachable_plot.y == self.m-1)]
+
 
 def tests():
     garden = Garden.from_lines(read_lines("day_21_1_test_input.txt"))
     reachable_plots = garden.reachable_plots(6)
 
     assert len(reachable_plots) == 16
+    print(reachable_plots)
 
 
 def main():
@@ -117,6 +138,7 @@ def main():
     garden = Garden.from_lines(read_lines("day_21_1_input.txt"))
     t = len(garden.reachable_plots(64))
     print(t)
+    assert t == 3814
 
 
 if __name__ == "__main__":
