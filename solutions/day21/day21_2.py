@@ -11,16 +11,14 @@ def shape_data(start_square: Vector, iter_count: int = 65, shape_name: str = '',
         garden.update_to_s([garden.start_square])
         print(garden)
         print(iter_count, start_square)
-        print(f"{shape_name}: {len(reachable_plots)}")
-
     print(f"{shape_name}: {len(reachable_plots)}")
     return len(reachable_plots)
 
 
-def quadratic(y, n):
-    a = (y[2] - (2 * y[1]) + y[0]) // 2
-    b = y[1] - y[0] - a
-    c = y[0]
+def quadratic(coefficients, n):
+    a = (coefficients[2] - (2 * coefficients[1]) + coefficients[0]) // 2
+    b = coefficients[1] - coefficients[0] - a
+    c = coefficients[0]
     return a * n ** 2 + b * n + c
 
 
@@ -51,7 +49,7 @@ def main():
                    corner_pents)
 
     iterations = (e, e, e, e,
-                  130,  # The rectangle is cheeky and shifts over 1 since it's an ODD input
+                  130,  # Currently haven't accounted for parity cases
                   130 + e, 130 + e, 130 + e, 130 + e,
                   65 + e, 65 + e, 65 + e, 65 + e,
                   130 + e, 130 + e, 130 + e, 130 + e)
