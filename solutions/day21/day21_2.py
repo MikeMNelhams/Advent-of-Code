@@ -21,7 +21,7 @@ def quadratic(y, n):
     a = (y[2] - (2 * y[1]) + y[0]) // 2
     b = y[1] - y[0] - a
     c = y[0]
-    return (a * n ** 2) + (b * n) + c
+    return a * n ** 2 + b * n + c
 
 
 def main_quadratic():
@@ -72,7 +72,6 @@ def main():
         shapes_data[corner_tri] *= w
 
     shapes_data["rectangle"] *= (1 + 2 * w * (w - 1))
-    # shapes_data["rectangle"] = 7600 * (1 + 2 * w * (w - 1))
     t = sum(shapes_data.values())
     print(t)
 
