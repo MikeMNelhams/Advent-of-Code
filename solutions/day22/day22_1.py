@@ -23,6 +23,13 @@ class Vector3D:
     def __mul__(self, other: int) -> Vector3D:
         return Vector3D((self.x * other, self.y * other, self.z * other))
 
+    def copy(self):
+        return Vector3D((self.x, self.y, self.z))
+
+    @property
+    def xy_projection(self) -> Vector3D:
+        return Vector3D((self.x, self.y, 0))
+
     @property
     def manhattan_distance_from_zero(self) -> int:
         return self.x + self.y + self.z
@@ -47,6 +54,8 @@ class Brick:
         self.shape_dimension = shape.first_non_zero_dim_index
         self.shape_length = shape.manhattan_distance_from_zero + 1
         self.__unit_vector = Vector3D(tuple(1 if i == self.shape_dimension else 0 for i in range(3)))
+        shape.z = 0
+        self.xy_projection = shape
 
     def __repr__(self) -> str:
         return f"{make_blue('B')}[{self.start} -> {self.end} @ {self.start.z}]"
@@ -56,45 +65,49 @@ class Brick:
         if max(p.x, r.x) >= q.x >= min(p.x, r.x) and max(p.y, r.y) >= q.y >= min(p.y, r.y):
             return True
         return False
-        
-    @staticmethod
-    def __orientation(p, q, r) -> int:
-        # Returns the following values:
-        # 0 : Collinear points, 1 : Clockwise points, 2 : Counterclockwise
 
-        # See https://www.geeksforgeeks.org/orientation-3-ordered-points/amp/
-        val = (float(q.y - p.y) * (r.x - q.x)) - (float(q.x - p.x) * (r.y - q.y))
-        if val > 0:
-            # Clockwise orientation
-            return 1
-        elif val < 0:
-            # Counterclockwise orientation
-            return 2
-        # Collinear orientation
-        return 0
+    def intersections(self, other: Brick) -> list[int]:
+        # # Returns the xy projection intersection
+        # if self.shape_dimension == 2:
+        #     # Both dots
+        #     if other.shape_dimension == 2:
+        #         if self.xy_projection == other.xy_projection:
+        #             return [0]
+        #     # ONLY Self dot
+        #     else:
+        #         valid_x = other.start.x <= self.xy_projection.x <= other.end.x
+        #         valid_y = other.start.y <= self.xy_projection.y <= other.end.y
+        #         if valid_x and valid_y:
+        #             return [0]
+        # # Other dot
+        # elif other.shape_dimension == 2:
+        #     valid_x = self.start.x <= other.xy_projection.x <= self.end.x
+        #     valid_y = self.start.y <= other.xy_projection.y <= self.end.y
+        #     if valid_x and valid_y:
+        #         return [0]
+        # # Parallel and neither are dots
+        # elif self.shape_dimension == other.shape_dimension:
+        #     if self.start.x <= other.start.x <= self.end.x:
+        #         return list(range(self.shape_length - (self.end.x - other.start.x),self.shape_length))
+        #     if self.start.y <= other.start.y <= self.end.x:
+        #         return list(range(self.shape_length - (self.end.y - other.start.y),self.shape_length))
+        #     if other.start.x <= self.start.x <= other.end.x:
+        #         return list(range(other.end.x - self.start.x))
+        #     if other.start.y <= self.start.y <= other.end.y:
+        #         return list(range(other.end.y - self.start.y))
+        # # Regular intersection between a horizontal and a vertical
+        # else:
+        #     self_is_horizontal = self.shape_dimension == 0
+        #     if self_is_horizontal:
+        #         if self.start.x <= other.xy_projection.x <= self.end.x:
+        #             return
+        #     else:
+        # return []
 
-    def intersects_xy_projection(self, other: Brick) -> bool:
-        # SOURCE: https://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
-        # Find the 4 orientations required for the general and special cases
-        o1 = self.__orientation(self.start, self.end, other.start)
-        o2 = self.__orientation(self.start, self.end, other.end)
-        o3 = self.__orientation(other.start, other.end, self.start)
-        o4 = self.__orientation(other.start, other.end, self.end)
-
-        # General case
-        if (o1 != o2) and (o3 != o4):
-            return True
-
-        # Special Cases
-        if (o1 == 0) and self.__on_segment(self.start, other.start, self.end):
-            return True
-        if (o2 == 0) and self.__on_segment(self.start, other.end, self.end):
-            return True
-        if (o3 == 0) and self.__on_segment(other.start, self.start, other.end):
-            return True
-        if (o4 == 0) and self.__on_segment(other.start, self.end, other.end):
-            return True
-        return False
+#     |
+#     |
+# ----#----
+#     |
 
     @property
     def all_coordinates(self) -> Iterable[Vector3D]:
@@ -126,13 +139,18 @@ class FallingBricks:
         comparison_brick = self[brick_index]
 
         max_coordinates_left_to_check = comparison_brick.shape_length
+        occlusions = [0 for _ in range(max_coordinates_left_to_check)]
         supporting_indices = []
 
         for i in range(brick_index-1, -1, -1):
             print(f"Checking brick: {brick_index} supported by {i}")
             if max_coordinates_left_to_check == 0:
                 return supporting_indices
-            if comparison_brick.intersects_xy_projection(self[i]):
+            intersections = comparison_brick.insersections(self[i])
+            unoccluded_intersections = [x for x in intersections if not occlusions[x]]
+            if any(unoccluded_intersections):
+                for intersection in unoccluded_intersections:
+                    occlusions[intersection] = 1
                 supporting_indices.append(i)
                 max_coordinates_left_to_check -= 1
         print(f"Supporting brick {brick_index} are: {supporting_indices}")
