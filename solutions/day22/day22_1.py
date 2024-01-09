@@ -13,6 +13,9 @@ class Vector3D:
         self.y = values[1]
         self.z = values[2]
 
+    def __eq__(self, other: Vector3D) -> bool:
+        return self.x == other.x and self.y == other.y and self.z == other.z
+
     def __repr__(self) -> str:
         return f"({self.x}, {self.y}, {self.z})"
 
@@ -47,6 +50,10 @@ class Vector3D:
     def values(self) -> list[int]:
         return [self.x, self.y, self.z]
 
+    @classmethod
+    def zero(cls):
+        return cls((0, 0, 0))
+
 
 class Brick:
     def __init__(self, start: Vector3D, end: Vector3D, shape: Vector3D):
@@ -72,21 +79,17 @@ class Brick:
 
     @property
     @abstractmethod
-    def unit_vector(self) -> Vector3D:
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
     def shape_dimension(self) -> int:
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def height_of_shape(self) -> int:
+    def unit_vector(self) -> Vector3D:
         raise NotImplementedError
 
+    @property
     @abstractmethod
-    def point_could_fall_on_brick(self, point: Vector3D) -> bool:
+    def height_of_shape(self) -> int:
         raise NotImplementedError
 
 
@@ -105,11 +108,6 @@ class XBrick(Brick):
     def height_of_shape(self) -> int:
         return 1
 
-    def point_could_fall_on_brick(self, point: Vector3D) -> bool:
-        if not self.is_below(point):
-            return False
-        return point.y == self.xy_projection.y and self.start.x <= point.x <= self.end.x
-
 
 class YBrick(Brick):
     __unit_vector = Vector3D((0, 1, 0))
@@ -125,11 +123,6 @@ class YBrick(Brick):
     @property
     def height_of_shape(self) -> int:
         return 1
-
-    def point_could_fall_on_brick(self, point: Vector3D) -> bool:
-        if not self.is_below(point):
-            return False
-        return point.x == self.xy_projection.x and self.start.y <= point.y <= self.end.y
 
 
 class ZBrick(Brick):
@@ -147,17 +140,29 @@ class ZBrick(Brick):
     def height_of_shape(self) -> int:
         return self.end.z - self.start.z + 1
 
-    def point_could_fall_on_brick(self, point: Vector3D) -> bool:
-        if not self.is_below(point):
-            return False
-        return point.xy_projection == self.xy_projection
-
     def frontier(self) -> list[Vector3D]:
         return [self.start.xy_projection]
 
 
+class CBrick(Brick):
+    """Single dot, doesn't stretch in any dimension"""
+    __unit_vector = Vector3D.zero()
+
+    @property
+    def shape_dimension(self) -> int:
+        return -1
+
+    @property
+    def unit_vector(self) -> Vector3D:
+        return self.__unit_vector
+
+    @property
+    def height_of_shape(self) -> int:
+        return 1
+
+
 class BrickFactory:
-    _brick_dim_to_type = {0: XBrick, 1: YBrick, 2: ZBrick}
+    _brick_dim_to_type = {0: XBrick, 1: YBrick, 2: ZBrick, 3: CBrick}
 
     @classmethod
     def from_line(cls, line: str) -> Brick:
@@ -165,6 +170,8 @@ class BrickFactory:
         start = Vector3D(tuple(int(x) for x in phrase_halves[0].split(',')))
         end = Vector3D(tuple(int(x) for x in phrase_halves[1].split(',')))
         shape = end - start
+        if shape == Vector3D.zero():
+            return cls._brick_dim_to_type[3](start, end, shape)
         shape_dimension = shape.first_non_zero_dim_index
         return cls._brick_dim_to_type[shape_dimension](start, end, shape)
 
@@ -212,39 +219,15 @@ class FallingBricks:
     def max_x(self) -> int:
         maximum = 0
         for brick in self.bricks:
-            maximum = max(maximum, brick.xy_projection.x)
+            maximum = max(maximum, brick.end.x)
         return maximum
 
     @property
     def max_y(self) -> int:
         maximum = 0
         for brick in self.bricks:
-            maximum = max(maximum, brick.xy_projection.y)
+            maximum = max(maximum, brick.end.y)
         return maximum
-
-    def brick_supports(self) -> dict[int, list[int]]:
-        n = len(self)
-        brick_to_brick_supports = [[] for _ in range(n)]
-        height_to_bricks = defaultdict(list)
-        max_x = self.max_x
-        max_y = self.max_y
-        frontier = BrickFrontier(max_x, max_y)
-        frontier.add(self[0].frontier(), self[0].height_of_shape)
-        height_to_bricks[0].append(0)
-        print(frontier, "adding brick frontier:", self[0].frontier(), brick_to_brick_supports, height_to_bricks)
-        for i in range(1, n):
-            brick = self[i]
-            brick_frontier = brick.frontier()
-            max_height_below = frontier.add(brick_frontier, brick.height_of_shape)
-            height_to_bricks[max_height_below].append(i)
-            print(frontier, "adding brick frontier:", brick_frontier, brick_to_brick_supports, height_to_bricks)
-
-        values = list(height_to_bricks.values())
-        for i in range(len(height_to_bricks)-1, 0, -1):
-            for brick_index in values[i]:
-                brick_to_brick_supports[brick_index] = values[i-1]
-
-        return brick_to_brick_supports
 
     @staticmethod
     def __sort_key(b: Brick) -> int:
@@ -253,12 +236,46 @@ class FallingBricks:
     def __sorted_bricks(self, bricks: list[Brick]):
         return sorted(bricks, key=self.__sort_key)
 
+    def bricks_supported_by(self) -> dict[int, list[int]]:
+        n = len(self)
+        brick_to_brick_supports = [[] for _ in range(n)]
+        height_to_bricks = defaultdict(list)
+        max_x = self.max_x
+        max_y = self.max_y
+        frontier = BrickFrontier(max_x, max_y)
+        frontier.add(self[0].frontier(), self[0].height_of_shape)
+        height_to_bricks[0].append(0)
+
+        for i in range(1, n):
+            brick = self[i]
+            brick_frontier = brick.frontier()
+            max_height_below = frontier.add(brick_frontier, brick.height_of_shape)
+            height_to_bricks[max_height_below].append(i)
+
+        values = list(height_to_bricks.values())
+        for i in range(len(height_to_bricks)-1, 0, -1):
+            for brick_index in values[i]:
+                brick_to_brick_supports[brick_index] = values[i-1]
+
+        return brick_to_brick_supports
+
+    def number_of_removable_blocks(self) -> int:
+        brick_supported_by = self.bricks_supported_by()
+        print(brick_supported_by)
+        number_of_vital_bricks = 0
+
+        # TODO invert the dict to get supports map
+        # If supports nothing, it's non-vital
+        # If it is supported by > 1 bricks, then the supporting bricks are all-non-vital
+        # bricks supported by nothing are always vital
+
+        print(number_of_vital_bricks)
+        return number_of_vital_bricks
+
 
 def tests():
     falling_bricks = FallingBricks([BrickFactory.from_line(line) for line in read_lines("day_22_1_test_input.txt")])
-    print(falling_bricks)
-    brick_supports = falling_bricks.brick_supports()
-    print(brick_supports)
+    brick_supports = falling_bricks.bricks_supported_by()
     assert brick_supports[0] == []  # A
     assert brick_supports[1] == [0]  # B
     assert brick_supports[2] == [0]  # C
@@ -267,9 +284,17 @@ def tests():
     assert brick_supports[5] == [3, 4]  # F
     assert brick_supports[6] == [5]  # G
 
+    assert falling_bricks.number_of_removable_blocks() == 5
+
 
 def main():
     tests()
+
+    falling_bricks = FallingBricks([BrickFactory.from_line(line) for line in read_lines("day_22_1_input.txt")])
+    t = falling_bricks.number_of_removable_blocks()
+    print(t)
+    # 1496 -- too high
+    # 515 -- correct answer
 
 
 if __name__ == "__main__":
