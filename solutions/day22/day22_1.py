@@ -269,34 +269,17 @@ class FallingBricks:
         for i in range(1, n):
             brick = self[i]
             brick_frontier = brick.frontier()
-            print(brick)
-            print(f"Brick frontier: {brick_frontier}")
             brick_to_brick_supports[i] = frontier.add(brick_frontier, brick.height_of_shape, i)
-            print(f"Brick {i} supported by: {brick_to_brick_supports[i]}")
-            print('-' * 100)
         return brick_to_brick_supports
 
     def number_of_removable_blocks(self) -> int:
         brick_supported_by = self.bricks_supported_by()
-        print(brick_supported_by)
-        non_vital_bricks = set()
-        seen_bricks = set()
+        vital_bricks = set()
         n = len(self)
-        total_empty = 0
         for brick_supports in brick_supported_by[1:]:
-            if not brick_supports:
-                total_empty += 1
-            if len(brick_supports) > 1:
-                for brick in brick_supports:
-                    non_vital_bricks.add(brick)
-                    seen_bricks.add(brick)
-            else:
-                for brick in brick_supports:
-                    seen_bricks.add(brick)
-        print(non_vital_bricks, seen_bricks, "\ntotal empty:", total_empty)
-        number_of_bricks_supporting_nothing = n - len(seen_bricks)
-        number_of_destructible_bricks = len(non_vital_bricks) + number_of_bricks_supporting_nothing
-        return number_of_destructible_bricks
+            if len(brick_supports) == 1:
+                vital_bricks.add(brick_supports[0])
+        return n - len(vital_bricks)
 
 
 def tests():
@@ -317,20 +300,10 @@ def main():
     tests()
 
     falling_bricks = FallingBricks([BrickFactory.from_line(line) for line in read_lines("day_22_1_input.txt")])
-    z = 0
-    c = 0
-    for brick in falling_bricks:
-        if isinstance(brick, ZBrick):
-            z += 1
-        if isinstance(brick, CBrick):
-            c += 1
 
     print(falling_bricks)
     t = falling_bricks.number_of_removable_blocks()
     print(t)
-    print(c, z)
-    # 1496 -- too high
-    # 515 -- correct answer
 
 
 if __name__ == "__main__":
