@@ -108,6 +108,9 @@ class XBrick(Brick):
     def height_of_shape(self) -> int:
         return 1
 
+    def __repr__(self) -> str:
+        return f"{make_blue('X')}{super().__repr__()}"
+
 
 class YBrick(Brick):
     __unit_vector = Vector3D((0, 1, 0))
@@ -123,6 +126,9 @@ class YBrick(Brick):
     @property
     def height_of_shape(self) -> int:
         return 1
+
+    def __repr__(self) -> str:
+        return f"{make_blue('Y')}{super().__repr__()}"
 
 
 class ZBrick(Brick):
@@ -143,6 +149,9 @@ class ZBrick(Brick):
     def frontier(self) -> list[Vector3D]:
         return [self.start.xy_projection]
 
+    def __repr__(self) -> str:
+        return f"{make_blue('Z')}{super().__repr__()}"
+
 
 class CBrick(Brick):
     """Single dot, doesn't stretch in any dimension"""
@@ -159,6 +168,9 @@ class CBrick(Brick):
     @property
     def height_of_shape(self) -> int:
         return 1
+
+    def __repr__(self) -> str:
+        return f"{make_blue('C')}{super().__repr__()}"
 
 
 class BrickFactory:
@@ -180,24 +192,32 @@ class BrickFrontier:
     def __init__(self, x_size: int, y_size: int):
         self.x_max = x_size + 1
         self.y_max = y_size + 1
-        self.data = [[0 for _ in range(self.x_max)] for _ in range(self.y_max)]
+        # x,y -> [height, brick @ height @ (x,y)]
+        self.data = [[[0, None] for _ in range(self.x_max)] for _ in range(self.y_max)]
 
     def __repr__(self) -> str:
-        return f"Frontier: {self.data}"
+        return f"Frontier:\n{'\n'.join(str(row) for row in self.data)}"
 
-    def __getitem__(self, item: tuple[int, int]) -> int:
+    def __getitem__(self, item: tuple[int, int]) -> tuple[int, int]:
         return self.data[item[0]][item[1]]
 
-    def __setitem__(self, key: tuple[int, int], value: int) -> None:
+    def __setitem__(self, key: tuple[int, int], value: tuple[int, int]) -> None:
         self.data[key[0]][key[1]] = value
         return None
 
-    def add(self, points: list[Vector3D], height_of_shape: int) -> int:
-        max_height_below = max(self[(point.x, point.y)] for point in points)
+    def add(self, points: list[Vector3D], height_of_shape: int, brick_index: int) -> list[int]:
+        max_height_below = max(self[(point.x, point.y)][0] for point in points)
         new_height = max_height_below + height_of_shape
+        if max_height_below == 0:
+            for point in points:
+                self[(point.x, point.y)] = [new_height, brick_index]
+            return []
+        intersection_bricks = set()
         for point in points:
-            self[(point.x, point.y)] = new_height
-        return max_height_below
+            if self[(point.x, point.y)][0] == max_height_below:
+                intersection_bricks.add(self[(point.x, point.y)][1])
+            self[(point.x, point.y)] = [new_height, brick_index]
+        return list(intersection_bricks)
 
 
 class FallingBricks:
@@ -236,41 +256,47 @@ class FallingBricks:
     def __sorted_bricks(self, bricks: list[Brick]):
         return sorted(bricks, key=self.__sort_key)
 
-    def bricks_supported_by(self) -> dict[int, list[int]]:
+    def bricks_supported_by(self) -> list[list[int]]:
         n = len(self)
         brick_to_brick_supports = [[] for _ in range(n)]
         height_to_bricks = defaultdict(list)
         max_x = self.max_x
         max_y = self.max_y
         frontier = BrickFrontier(max_x, max_y)
-        frontier.add(self[0].frontier(), self[0].height_of_shape)
+        frontier.add(self[0].frontier(), self[0].height_of_shape, 0)
         height_to_bricks[0].append(0)
 
         for i in range(1, n):
             brick = self[i]
             brick_frontier = brick.frontier()
-            max_height_below = frontier.add(brick_frontier, brick.height_of_shape)
-            height_to_bricks[max_height_below].append(i)
-
-        values = list(height_to_bricks.values())
-        for i in range(len(height_to_bricks)-1, 0, -1):
-            for brick_index in values[i]:
-                brick_to_brick_supports[brick_index] = values[i-1]
-
+            print(brick)
+            print(f"Brick frontier: {brick_frontier}")
+            brick_to_brick_supports[i] = frontier.add(brick_frontier, brick.height_of_shape, i)
+            print(f"Brick {i} supported by: {brick_to_brick_supports[i]}")
+            print('-' * 100)
         return brick_to_brick_supports
 
     def number_of_removable_blocks(self) -> int:
         brick_supported_by = self.bricks_supported_by()
         print(brick_supported_by)
-        number_of_vital_bricks = 0
-
-        # TODO invert the dict to get supports map
-        # If supports nothing, it's non-vital
-        # If it is supported by > 1 bricks, then the supporting bricks are all-non-vital
-        # bricks supported by nothing are always vital
-
-        print(number_of_vital_bricks)
-        return number_of_vital_bricks
+        non_vital_bricks = set()
+        seen_bricks = set()
+        n = len(self)
+        total_empty = 0
+        for brick_supports in brick_supported_by[1:]:
+            if not brick_supports:
+                total_empty += 1
+            if len(brick_supports) > 1:
+                for brick in brick_supports:
+                    non_vital_bricks.add(brick)
+                    seen_bricks.add(brick)
+            else:
+                for brick in brick_supports:
+                    seen_bricks.add(brick)
+        print(non_vital_bricks, seen_bricks, "\ntotal empty:", total_empty)
+        number_of_bricks_supporting_nothing = n - len(seen_bricks)
+        number_of_destructible_bricks = len(non_vital_bricks) + number_of_bricks_supporting_nothing
+        return number_of_destructible_bricks
 
 
 def tests():
@@ -291,8 +317,18 @@ def main():
     tests()
 
     falling_bricks = FallingBricks([BrickFactory.from_line(line) for line in read_lines("day_22_1_input.txt")])
+    z = 0
+    c = 0
+    for brick in falling_bricks:
+        if isinstance(brick, ZBrick):
+            z += 1
+        if isinstance(brick, CBrick):
+            c += 1
+
+    print(falling_bricks)
     t = falling_bricks.number_of_removable_blocks()
     print(t)
+    print(c, z)
     # 1496 -- too high
     # 515 -- correct answer
 
