@@ -2,7 +2,7 @@ from __future__ import annotations
 from handy_dandy_library.file_processing import read_lines
 from handy_dandy_library.string_manipulations import make_blue
 
-from collections import defaultdict
+from collections import defaultdict, deque
 from abc import abstractmethod
 from typing import Iterable
 
@@ -256,9 +256,9 @@ class FallingBricks:
     def __sorted_bricks(self, bricks: list[Brick]):
         return sorted(bricks, key=self.__sort_key)
 
-    def bricks_supported_by(self) -> list[list[int]]:
+    def bricks_supported_by(self) -> list[set[int]]:
         n = len(self)
-        brick_to_brick_supports = [[] for _ in range(n)]
+        brick_to_brick_supports = [set() for _ in range(n)]
         height_to_bricks = defaultdict(list)
         max_x = self.max_x
         max_y = self.max_y
@@ -269,29 +269,76 @@ class FallingBricks:
         for i in range(1, n):
             brick = self[i]
             brick_frontier = brick.frontier()
-            brick_to_brick_supports[i] = frontier.add(brick_frontier, brick.height_of_shape, i)
+            brick_to_brick_supports[i] = set(frontier.add(brick_frontier, brick.height_of_shape, i))
         return brick_to_brick_supports
 
     def number_of_removable_blocks(self) -> int:
-        brick_supported_by = self.bricks_supported_by()
+        vital_bricks = self.vital_bricks(self.bricks_supported_by())
+        return len(self) - len(vital_bricks)
+
+    @staticmethod
+    def vital_bricks(brick_supported_by: list[set[int]]) -> set[int]:
         vital_bricks = set()
-        n = len(self)
         for brick_supports in brick_supported_by[1:]:
             if len(brick_supports) == 1:
-                vital_bricks.add(brick_supports[0])
-        return n - len(vital_bricks)
+                vital_bricks.add(list(brick_supports)[0])
+        return vital_bricks
 
+    @staticmethod
+    def __brick_supports(bricks_supported_by: list[list[int]]) -> list[set[int]]:
+        brick_supports = [set() for _ in range(len(bricks_supported_by))]
+        for i, values in enumerate(bricks_supported_by):
+            for value in values:
+                brick_supports[value].add(i)
+        return brick_supports
 
+    def number_of_falls_from_vital_blocks(self) -> int:
+        brick_supported_by = self.bricks_supported_by()
+        brick_supports = self.__brick_supports(brick_supported_by)
+        print(f"Brick supports: {brick_supports}")
+        print(f"Brick supported by: {brick_supported_by}")
+        total = 0
+        for i in range(len(self)):
+            q = deque(j for j in brick_supports[i] if len(brick_supported_by[j]) == 1)
+            falling = set(q)
+            falling.add(i)
+
+            while q:
+                j = q.popleft()
+                for k in brick_supports[j] - falling:
+                    if brick_supported_by[k] <= falling:
+                        q.append(k)
+                        falling.add(k)
+
+            total += len(falling) - 1
+        return total
+# deque([])
+# deque([])
+# deque([23])
+# deque([19])
+# deque([22])
+# deque([])
+# deque([])
+# deque([24, 27])
+
+# deque([])
+# deque([])
+# deque([23])
+# deque([11])
+# deque([22])
+# deque([])
+# deque([])
+# deque([24, 28])
 def tests():
     falling_bricks = FallingBricks([BrickFactory.from_line(line) for line in read_lines("day_22_1_test_input.txt")])
     brick_supports = falling_bricks.bricks_supported_by()
-    assert brick_supports[0] == []  # A
-    assert brick_supports[1] == [0]  # B
-    assert brick_supports[2] == [0]  # C
-    assert brick_supports[3] == [1, 2]  # D
-    assert brick_supports[4] == [1, 2]  # E
-    assert brick_supports[5] == [3, 4]  # F
-    assert brick_supports[6] == [5]  # G
+    assert list(brick_supports[0]) == []  # A
+    assert list(brick_supports[1]) == [0]  # B
+    assert list(brick_supports[2]) == [0]  # C
+    assert list(brick_supports[3]) == [1, 2]  # D
+    assert list(brick_supports[4]) == [1, 2]  # E
+    assert list(brick_supports[5]) == [3, 4]  # F
+    assert list(brick_supports[6]) == [5]  # G
 
     assert falling_bricks.number_of_removable_blocks() == 5
 
@@ -300,10 +347,9 @@ def main():
     tests()
 
     falling_bricks = FallingBricks([BrickFactory.from_line(line) for line in read_lines("day_22_1_input.txt")])
-
-    print(falling_bricks)
     t = falling_bricks.number_of_removable_blocks()
     print(t)
+    assert t == 515
 
 
 if __name__ == "__main__":
