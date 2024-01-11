@@ -296,7 +296,7 @@ class FallingBricks:
         brick_supported_by = self.bricks_supported_by()
         brick_supports = self.__brick_supports(brick_supported_by)
         total = 0
-        for i in range(len(self)):
+        for i in range(len(self) - 1, -1, -1):
             q = deque(j for j in brick_supports[i] if len(brick_supported_by[j]) == 1)
             falling = set(q)
             falling.add(i)
@@ -306,7 +306,6 @@ class FallingBricks:
                     if brick_supported_by[k] <= falling:
                         q.append(k)
                         falling.add(k)
-
             total += len(falling) - 1
         return total
 
