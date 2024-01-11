@@ -295,14 +295,11 @@ class FallingBricks:
     def number_of_falls_from_vital_blocks(self) -> int:
         brick_supported_by = self.bricks_supported_by()
         brick_supports = self.__brick_supports(brick_supported_by)
-        print(f"Brick supports: {brick_supports}")
-        print(f"Brick supported by: {brick_supported_by}")
         total = 0
         for i in range(len(self)):
             q = deque(j for j in brick_supports[i] if len(brick_supported_by[j]) == 1)
             falling = set(q)
             falling.add(i)
-
             while q:
                 j = q.popleft()
                 for k in brick_supports[j] - falling:
@@ -312,23 +309,8 @@ class FallingBricks:
 
             total += len(falling) - 1
         return total
-# deque([])
-# deque([])
-# deque([23])
-# deque([19])
-# deque([22])
-# deque([])
-# deque([])
-# deque([24, 27])
 
-# deque([])
-# deque([])
-# deque([23])
-# deque([11])
-# deque([22])
-# deque([])
-# deque([])
-# deque([24, 28])
+
 def tests():
     falling_bricks = FallingBricks([BrickFactory.from_line(line) for line in read_lines("day_22_1_test_input.txt")])
     brick_supports = falling_bricks.bricks_supported_by()
