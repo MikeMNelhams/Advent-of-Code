@@ -6,7 +6,7 @@ from collections import deque, defaultdict
 
 
 type Grid = list[list[int]]
-type adjacency_set2d = list[list[set[Vector]]]
+type adjacency_set2d = dict[Vector, set[Vector]]
 
 INF = 10**20
 
@@ -72,8 +72,13 @@ class SnowIsland:
         self.grid = encoded_grid
         self.n = len(encoded_grid)
         self.m = len(encoded_grid[0])
+
         self.start_position = start_position
         self.end_position = end_position
+        if start_position is None:
+            self.start_position = Vector((0, 1))
+        if end_position is None:
+            self.end_position = Vector((self.n-1, self.m-2))
 
     def __getitem__(self, item: Vector) -> int:
         return self.grid[item.x][item.y]
@@ -93,8 +98,9 @@ class SnowIsland:
         return pad_with_horizontal_rules(lines)
 
     @classmethod
-    def from_lines(cls, lines: list[str], start_position: Vector, end_position: Vector):
-        return cls([[cls.encodings[char] for char in line] for line in lines], start_position, end_position)
+    def from_lines(cls, lines: list[str], start_position: Vector=None, end_position: Vector=None):
+        encoded_grid = [[cls.encodings[char] for char in line] for line in lines]
+        return cls(encoded_grid, start_position, end_position)
 
     def __edge_checks(self, coordinate: Vector) -> (bool, bool, bool, bool):
         return coordinate.y < self.m - 1, coordinate.x > 0, coordinate.x < self.n - 1, coordinate.y > 0
@@ -129,15 +135,15 @@ class SnowIsland:
         valid_neighbours = {neighbour for i, (neighbour, is_valid) in enumerate(zip(potential_neighbours, coord_checks)) if is_valid}
         return valid_neighbours
 
-    def to_adjacency_set(self) -> list[list[set[Vector]]]:
-        adjacency_set = [[set() for _ in range(self.m)] for _ in range(self.n)]
+    def to_adjacency_set(self) -> adjacency_set2d:
+        adjacency_set = defaultdict(set)
         nodes_to_visit = [self.start_position]
         while nodes_to_visit:
             node = nodes_to_visit.pop()
             potential_neighbours = self.neighbours(node)
             for potential_neighbour in potential_neighbours:
-                if node not in adjacency_set[potential_neighbour.x][potential_neighbour.y]:
-                    adjacency_set[node.x][node.y].add(potential_neighbour)
+                if node not in adjacency_set[potential_neighbour]:
+                    adjacency_set[node].add(potential_neighbour)
                     nodes_to_visit.append(potential_neighbour)
         return adjacency_set
 
@@ -145,19 +151,17 @@ class SnowIsland:
 class DirectedGraph2D:
     def __init__(self, adjacency_set: adjacency_set2d):
         self.adjacency_set = adjacency_set
-        self.n = len(adjacency_set)
-        self.m = len(adjacency_set[0])
 
     def __repr__(self) -> str:
         return str(self.adjacency_set)
 
     def __getitem__(self, item: Vector) -> set[Vector]:
-        return self.adjacency_set[item.x][item.y]
+        return self.adjacency_set[item]
 
-    @property
-    def visually_sorted(self) -> list[Vector]:
-        # TODO DOESN'T INCLUDE ANY CONNECTED NODES THAT HAVE 0 OUTDEGREE
-        return [c for i in range(self.n) for j in range(self.m) if self[(c := Vector((i, j)))]]
+    def visually_sorted(self, grid_size: tuple[int, int]) -> list[Vector]:
+        n = grid_size[0]
+        m = grid_size[1]
+        return [c for i in range(n) for j in range(m) if ((c := Vector((i, j))) in self.adjacency_set)]
 
     def is_acyclic(self, known_source: Vector) -> bool:
         return not self.is_cyclic(known_source)
@@ -185,17 +189,27 @@ class DirectedGraph2D:
 
         return False
 
-    def longest_hamiltonian_path(self, start_position: Vector) -> list[Vector]:
+    def longest_hamiltonian_path_size(self, start_position: Vector, grid_size: tuple[int, int]) -> list[Vector]:
         assert self.is_acyclic(start_position)
-        topological_sort = self.visually_sorted
-        distances = {node: -INF for node in topological_sort}
+        topological_sort = self.visually_sorted(grid_size)
+        distances = {node: 0 for node in topological_sort}
         distances[topological_sort[0]] = 0
-        print(distances.keys())
-        for i, node in enumerate(topological_sort):
-            successors = self[node]
+        visited = {topological_sort[-1]}
+        to_visit = [node for node in reversed(topological_sort)]
+
+        def dfs(_node):
+            visited.add(_node)
+            successors = self[_node]
             for successor in successors:
-                distances[successor] = max(distances[successor], distances[node] + 1)
-        return max(reversed(distances.values()))
+                if successor not in visited:
+                    dfs(successor)
+                distances[_node] = max(distances[_node], 1 + distances[successor])
+
+        for node in to_visit:
+            if node not in visited:
+                dfs(node)
+
+        return max(distances.values())
 
 
 def tests():
@@ -212,18 +226,23 @@ def tests():
     assert snow_island.neighbours(x2) == {x2 + snow_island.DOWN}
     assert snow_island.neighbours(x2 + snow_island.DOWN) == {x2 + 2 * snow_island.DOWN}
     snow_island_graph = DirectedGraph2D(snow_island.to_adjacency_set())
-
-    print(snow_island_graph.visually_sorted)
+    grid_size = (snow_island.n, snow_island.m)
+    print(f"Visually sorted: {snow_island_graph.visually_sorted(grid_size)}")
     print(f"Is the graph acyclic?: {snow_island_graph.is_acyclic(start_position)}")
-
-    print(snow_island_graph.longest_hamiltonian_path(start_position))
-
-    # TODO visual topological sort is wrong.
-
+    assert snow_island_graph.longest_hamiltonian_path_size(start_position, grid_size) == 94
 
 
 def main():
     tests()
+
+    snow_island = SnowIsland.from_lines(read_lines("day23_1_input.txt"))
+    print(snow_island)
+    snow_island_graph = DirectedGraph2D(snow_island.to_adjacency_set())
+    grid_size = (snow_island.n, snow_island.m)
+    start_position = snow_island.start_position
+
+    t = snow_island_graph.longest_hamiltonian_path_size(start_position, grid_size)
+    print(t)
 
 
 if __name__ == "__main__":
