@@ -90,12 +90,12 @@ class SnowIsland:
     def __repr__(self) -> str:
         start_position_encoding = self[self.start_position]
         end_position_encoding = self[self.end_position]
-        self[self.start_position] = 6
-        self[self.end_position] = 7
+        self[self.start_position] = self.encodings['S']
+        self[self.end_position] = self.encodings['E']
         lines = '\n'.join(''.join(self.reverse_encodings[encoding] for encoding in line) for line in self.grid)
         self[self.start_position] = start_position_encoding
         self[self.end_position] = end_position_encoding
-        return pad_with_horizontal_rules(lines)
+        return pad_with_horizontal_rules(lines, rule_length=self.m)
 
     @classmethod
     def from_lines(cls, lines: list[str], start_position: Vector=None, end_position: Vector=None):
@@ -189,7 +189,7 @@ class DirectedGraph2D:
 
         return False
 
-    def longest_hamiltonian_path_size(self, start_position: Vector, grid_size: tuple[int, int]) -> list[Vector]:
+    def longest_path_size(self, start_position: Vector, grid_size: tuple[int, int]) -> list[Vector]:
         assert self.is_acyclic(start_position)
         topological_sort = self.visually_sorted(grid_size)
         distances = {node: 0 for node in topological_sort}
@@ -229,7 +229,7 @@ def tests():
     grid_size = (snow_island.n, snow_island.m)
     print(f"Visually sorted: {snow_island_graph.visually_sorted(grid_size)}")
     print(f"Is the graph acyclic?: {snow_island_graph.is_acyclic(start_position)}")
-    assert snow_island_graph.longest_hamiltonian_path_size(start_position, grid_size) == 94
+    assert snow_island_graph.longest_path_size(start_position, grid_size) == 94
 
 
 def main():
@@ -241,7 +241,7 @@ def main():
     grid_size = (snow_island.n, snow_island.m)
     start_position = snow_island.start_position
 
-    t = snow_island_graph.longest_hamiltonian_path_size(start_position, grid_size)
+    t = snow_island_graph.longest_path_size(start_position, grid_size)
     print(t)
 
 
