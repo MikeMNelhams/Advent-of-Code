@@ -25,15 +25,23 @@ def contiguous_permutations(capacity: int, number_of_elements: int) -> int:
 
 def combinations_from_puzzle_line(line: str) -> int:
     input_halves = line.split(' ')
-    nonogram_numbers = [int(char) for char in input_halves[1].split(',')]
+    nonogram_numbers = tuple(int(char) for char in input_halves[1].split(','))
     nonogram_string = input_halves[0] + '.'
     total_combinations = 0
 
-    chars_to_check = [[nonogram_string, 0, nonogram_numbers]]
+    memo = {}
+    chars_to_check = [(nonogram_string, 0, nonogram_numbers)]
     while chars_to_check:
         step = chars_to_check.pop()
+
+        if step in memo:
+            total_combinations += memo[step]
+            continue
+
         if not step[0]:
-            total_combinations += int(not step[1] and not step[2])
+            addition = int(not step[1] and not step[2])
+            memo[step] = addition
+            total_combinations += addition
             continue
 
         potential_chars = [".", "#"]
@@ -42,19 +50,23 @@ def combinations_from_puzzle_line(line: str) -> int:
 
         for char in potential_chars:
             if char == "#":
-                chars_to_check.append([step[0][1:], step[1] + 1, step[2]])
+                chars_to_check.append((step[0][1:], step[1] + 1, step[2]))
                 continue
             if not step[1]:
-                chars_to_check.append([step[0][1:], 0, step[2]])
+                chars_to_check.append((step[0][1:], 0, step[2]))
                 continue
             if step[2] and step[2][0] == step[1]:
-                chars_to_check.append([step[0][1:], 0, step[2][1:]])
+                chars_to_check.append((step[0][1:], 0, step[2][1:]))
 
     return total_combinations
 
 
 def combinations_from_puzzle(lines: list[str]) -> int:
-    return sum(combinations_from_puzzle_line(line) for line in lines)
+    total = 0
+    for i, line in enumerate(lines):
+        print(f"Processing line #: {i} | {line}")
+        total += combinations_from_puzzle_line(line)
+    return total
 
 
 def tests():
@@ -97,6 +109,7 @@ def main():
 
     t = combinations_from_puzzle(read_lines("day_12_1_input.txt"))
     print(t)
+    assert t == 7460
 
 
 if __name__ == "__main__":
