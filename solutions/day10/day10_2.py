@@ -28,7 +28,7 @@ def main():
     pipe_grid = PipeGrid.from_lines(read_lines("day_10_1_input.txt"))
     t = pipe_grid.area_enclosed
 
-    print(t)
+    assert t == 511
 
 
 if __name__ == "__main__":

@@ -146,7 +146,7 @@ class PipeGrid:
         # Using Pick's theorem. Quicker than raytracing, since all points are on the integer grid.
         total_area = polygon_area(main_loop)
         border_points = integer_border_points_count(main_loop)
-        interior_points = int(total_area + 1 - border_points // 2)
+        interior_points = int(total_area) + 1 - border_points // 2
         return interior_points
 
 
@@ -166,7 +166,8 @@ def main():
 
     pipe_grid = PipeGrid.from_lines(read_lines("day_10_1_input.txt"))
     t = pipe_grid.main_loop_furthest_distance
-    print(t)
+
+    assert t == 6613
 
 
 if __name__ == "__main__":
