@@ -1,5 +1,6 @@
 from __future__ import annotations
 from handy_dandy_library.file_processing import read_lines
+from handy_dandy_library.string_manipulations import make_blue
 from handy_dandy_library.linear_algebra import Vector
 
 from collections import deque
@@ -17,6 +18,7 @@ class PipeGrid:
                        'L': (RIGHT, UP), 'J': (UP, LEFT),
                        '7': (DOWN, LEFT), 'F': (RIGHT, DOWN),
                        'S': (RIGHT, UP, DOWN, LEFT)}
+    CARTESIAN_PIPES = {'|', '-'}
 
     def __init__(self, grid: Grid):
         self.grid = grid
@@ -31,6 +33,13 @@ class PipeGrid:
 
     def __getitem__(self, item: Vector) -> set[Vector]:
         return self.grid[item.y][item.x]
+
+    def coloured_squares(self, square_coordinates: set[Vector]) -> None:
+        representation = '\n'.join(''.join(make_blue(encoding) if Vector((j, i)) in square_coordinates
+                                           else encoding
+                                           for j, encoding in enumerate(line))
+                                   for i, line in enumerate(self.grid))
+        return representation
 
     @staticmethod
     def _pipe_chars(grid: Grid) -> Grid:
@@ -88,7 +97,7 @@ class PipeGrid:
         return valid_neighbours
 
     @property
-    def main_loop_furthest_distance(self) -> list[Vector]:
+    def main_loop(self) -> (set[Vector], int):
         pipes_connecting_to_start = self.s_neighbours()
         visited = {self.starting_coordinate}
         coordinates_to_visit = deque([(pipe, 1) for pipe in pipes_connecting_to_start])
@@ -103,7 +112,44 @@ class PipeGrid:
 
             for neighbour in neighbours:
                 coordinates_to_visit.append((neighbour, distance + 1))
+        return visited, max_distance
+
+    @property
+    def main_loop_furthest_distance(self) -> int:
+        _, max_distance = self.main_loop
         return max_distance
+
+    @property
+    def main_loop_shortened_coordinates(self) -> list[Vector]:
+        """ Remove all vertical and horizontal pipes """
+        pipes_connecting_to_start = self.s_neighbours()
+        coordinates_to_visit = [list(pipes_connecting_to_start)[0]]
+        previous = self.starting_coordinate
+        path = [self.starting_coordinate]
+
+        while coordinates_to_visit:
+            coordinate = coordinates_to_visit.pop()
+            path.append(coordinate)
+            neighbours = self.neighbours(coordinate)
+            neighbours -= {self.starting_coordinate, previous}
+
+            previous = coordinate
+            for neighbour in neighbours:
+                coordinates_to_visit.append(neighbour)
+
+        contracted_path = [coordinate for coordinate in path if self[coordinate] not in self.CARTESIAN_PIPES]
+        return contracted_path
+
+    @property
+    def area_enclosed(self) -> int:
+        main_loop = self.main_loop_shortened_coordinates
+        # Using Pick's theorem. Quicker than raytracing, since all points are on the integer grid.
+        consecutive_pairs = zip(main_loop, main_loop[1:] + [main_loop[0]])
+        total_area = 0.5 * abs(sum(a.cross_product(b) for a, b in consecutive_pairs))
+        consecutive_pairs = zip(main_loop, main_loop[1:] + [main_loop[0]])
+        border_points = sum(a.manhattan_distance(b) for a, b in consecutive_pairs) + 1
+        interior_points = int(total_area + 1 - border_points // 2)
+        return interior_points
 
 
 def tests():
@@ -121,7 +167,6 @@ def main():
     tests()
 
     pipe_grid = PipeGrid.from_lines(read_lines("day_10_1_input.txt"))
-    print(pipe_grid)
     t = pipe_grid.main_loop_furthest_distance
     print(t)
 
