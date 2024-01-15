@@ -1,5 +1,6 @@
 from __future__ import annotations
 from handy_dandy_library.file_processing import read_lines
+from handy_dandy_library.linear_algebra import polygon_area, integer_border_points_count
 
 
 type Coordinate = Vector
@@ -96,12 +97,8 @@ class Shape:
         self.__coordinates_repr = [(coordinate.x, coordinate.y) for coordinate in coordinates]
 
     @property
-    def __consecutive_pairs(self):
-        return zip(self.coordinates, self.coordinates[1:] + [self.coordinates[0]])
-
-    @property
     def num_border_points(self) -> int:
-        return sum(a.manhattan_distance(b) for a, b in self.__consecutive_pairs) + 1
+        return integer_border_points_count(self.coordinates)
 
     def __repr__(self) -> str:
         return str(self.__coordinates_repr)
@@ -111,7 +108,7 @@ class Shape:
 
     @property
     def area(self) -> float:
-        return 0.5 * abs(sum(a.cross_product(b) for a, b in self.__consecutive_pairs))
+        return polygon_area(self.coordinates)
 
     @property
     def dug_area(self) -> int:
