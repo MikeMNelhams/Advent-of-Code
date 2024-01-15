@@ -1,4 +1,9 @@
-def binary_search(haystack: list, target):
+from typing import TypeVar, Iterable
+
+T = TypeVar('T')
+
+
+def binary_search(haystack: list, target) -> (int, bool):
     first = 0
     last = len(haystack) - 1
     found = False
@@ -16,6 +21,10 @@ def binary_search(haystack: list, target):
             else:
                 first = midpoint + 1
     return found_at_index, found
+
+
+def consecutive_pairs(sequence: list[T]) -> Iterable[tuple[T, T]]:
+    return zip(sequence, sequence[1:] + [sequence[0]])
 
 
 def main():
