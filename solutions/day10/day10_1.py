@@ -1,7 +1,7 @@
 from __future__ import annotations
 from handy_dandy_library.file_processing import read_lines
 from handy_dandy_library.string_manipulations import make_blue
-from handy_dandy_library.linear_algebra import Vector
+from handy_dandy_library.linear_algebra import Vector, polygon_area, integer_border_points_count
 
 from collections import deque
 
@@ -144,10 +144,8 @@ class PipeGrid:
     def area_enclosed(self) -> int:
         main_loop = self.main_loop_shortened_coordinates
         # Using Pick's theorem. Quicker than raytracing, since all points are on the integer grid.
-        consecutive_pairs = zip(main_loop, main_loop[1:] + [main_loop[0]])
-        total_area = 0.5 * abs(sum(a.cross_product(b) for a, b in consecutive_pairs))
-        consecutive_pairs = zip(main_loop, main_loop[1:] + [main_loop[0]])
-        border_points = sum(a.manhattan_distance(b) for a, b in consecutive_pairs) + 1
+        total_area = polygon_area(main_loop)
+        border_points = integer_border_points_count(main_loop)
         interior_points = int(total_area + 1 - border_points // 2)
         return interior_points
 
