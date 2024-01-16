@@ -1,58 +1,11 @@
 from __future__ import annotations
 from handy_dandy_library.file_processing import read_lines
 from handy_dandy_library.string_manipulations import make_blue
+from handy_dandy_library.linear_algebra import Vector3D
 
 from collections import defaultdict, deque
 from abc import abstractmethod
 from typing import Iterable
-
-
-class Vector3D:
-    def __init__(self, values: tuple[int, int, int]):
-        self.x = values[0]
-        self.y = values[1]
-        self.z = values[2]
-
-    def __eq__(self, other: Vector3D) -> bool:
-        return self.x == other.x and self.y == other.y and self.z == other.z
-
-    def __repr__(self) -> str:
-        return f"({self.x}, {self.y}, {self.z})"
-
-    def __add__(self, other: Vector3D) -> Vector3D:
-        return Vector3D((self.x + other.x, self.y + other.y, self.z + other.z))
-
-    def __sub__(self, other: Vector3D) -> Vector3D:
-        return Vector3D((self.x - other.x, self.y - other.y, self.z - other.z))
-
-    def __mul__(self, other: int) -> Vector3D:
-        return Vector3D((self.x * other, self.y * other, self.z * other))
-
-    def copy(self):
-        return Vector3D((self.x, self.y, self.z))
-
-    @property
-    def xy_projection(self) -> Vector3D:
-        return Vector3D((self.x, self.y, 0))
-
-    @property
-    def manhattan_distance_from_zero(self) -> int:
-        return self.x + self.y + self.z
-
-    @property
-    def first_non_zero_dim_index(self) -> int:
-        for i, value in enumerate(self.values):
-            if value != 0:
-                return i
-        raise TypeError
-
-    @property
-    def values(self) -> list[int]:
-        return [self.x, self.y, self.z]
-
-    @classmethod
-    def zero(cls):
-        return cls((0, 0, 0))
 
 
 class Brick:
