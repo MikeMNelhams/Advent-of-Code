@@ -24,7 +24,7 @@ class UnitVector:
 
 
 class Vector(UnitVector):
-    def __init__(self, values: tuple[int, int]):
+    def __init__(self, values: tuple[float, float]):
         super().__init__(values)
 
     def __hash__(self):
@@ -39,19 +39,19 @@ class Vector(UnitVector):
     def __sub__(self, other: Vector) -> Vector:
         return Vector((self.x - other.x, self.y - other.y))
 
-    def __mul__(self, other: int) -> Vector:
+    def __mul__(self, other: float) -> Vector:
         return Vector((self.x * other, self.y * other))
 
-    def __rmul__(self, other: int) -> Vector:
+    def __rmul__(self, other: float) -> Vector:
         return self.__mul__(other)
 
     def __mod__(self, other: int) -> Vector:
         return Vector((self.x % other, self.y % other))
 
-    def manhattan_distance(self, other: Vector) -> int:
+    def manhattan_distance(self, other: Vector) -> float:
         return abs(self.x - other.x) + abs(self.y - other.y)
 
-    def cross_product(self, other: Vector) -> int:
+    def cross_product(self, other: Vector) -> float:
         return self.x * other.y - other.x * self.y
 
     @classmethod
@@ -60,7 +60,7 @@ class Vector(UnitVector):
 
 
 class Vector3D:
-    def __init__(self, values: tuple[int, int, int]):
+    def __init__(self, values: tuple[float, float, float]):
         self.x = values[0]
         self.y = values[1]
         self.z = values[2]
@@ -77,7 +77,7 @@ class Vector3D:
     def __sub__(self, other: Vector3D) -> Vector3D:
         return Vector3D((self.x - other.x, self.y - other.y, self.z - other.z))
 
-    def __mul__(self, other: int) -> Vector3D:
+    def __mul__(self, other: float) -> Vector3D:
         return Vector3D((self.x * other, self.y * other, self.z * other))
 
     def copy(self):
@@ -98,8 +98,11 @@ class Vector3D:
     def xy_projection(self) -> Vector3D:
         return Vector3D((self.x, self.y, 0))
 
+    def xy_projected_cross_product(self, other: Vector3D) -> int:
+        return self.x * other.y - other.x * self.y
+
     @property
-    def manhattan_distance_from_zero(self) -> int:
+    def manhattan_distance_from_zero(self) -> float:
         return self.x + self.y + self.z
 
     @property
@@ -110,7 +113,7 @@ class Vector3D:
         raise TypeError
 
     @property
-    def values(self) -> list[int]:
+    def values(self) -> list[float]:
         return [self.x, self.y, self.z]
 
     @classmethod
@@ -124,3 +127,7 @@ def polygon_area(polygon: list[Vector]) -> float:
 
 def integer_border_points_count(polygon: list[Vector]) -> int:
     return sum(a.manhattan_distance(b) for a, b in consecutive_pairs(polygon)) + 1
+
+
+def sign(x: float) -> int:
+    return x and (-1 if x < 0 else 1)
