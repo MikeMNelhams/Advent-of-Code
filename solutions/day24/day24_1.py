@@ -37,14 +37,9 @@ def crosses_in_boundaryXY(p0: Particle, p1: Particle, boundary: tuple[float, flo
             raise NotImplementedError  # None of the examples are coincidental
         return False
 
-    r_a_x, r_a_y = p0.position.x, p0.position.y
-    r_b_x, r_b_y = p1.position.x, p1.position.y
-    u_a_x, u_a_y = v0.x, v0.y
-    u_b_x, u_b_y = v1.x, v1.y
-
     intersection = p0.position + v0 * (mu_a_numerator / denominator)
-    a_in_past = sign(intersection.x - r_a_x) != sign(u_a_x)
-    b_in_past = sign(intersection.x - r_b_x) != sign(u_b_x)
+    a_in_past = sign(intersection.x - p0.position.x) != sign(v0.x)
+    b_in_past = sign(intersection.x - p1.position.x) != sign(v1.x)
 
     if a_in_past or b_in_past:
         return False
