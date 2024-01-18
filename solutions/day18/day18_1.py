@@ -1,6 +1,6 @@
 from __future__ import annotations
 from handy_dandy_library.file_processing import read_lines
-from handy_dandy_library.linear_algebra import Vector, polygon_area, integer_border_points_count
+from handy_dandy_library.linear_algebra import Vector2D, polygon_area, integer_border_points_count
 
 
 def sign(x: int) -> int:
@@ -10,15 +10,15 @@ def sign(x: int) -> int:
 
 
 class ColorVector:
-    UP = Vector((0, 1))
-    RIGHT = Vector((1, 0))
-    DOWN = Vector((0, -1))
-    LEFT = Vector((-1, 0))
+    UP = Vector2D((0, 1))
+    RIGHT = Vector2D((1, 0))
+    DOWN = Vector2D((0, -1))
+    LEFT = Vector2D((-1, 0))
     DIRECTION_TO_UNIT_VECTORS = {'U': UP, 'R': RIGHT,
                                  'D': DOWN, 'L': LEFT}
     INT_TO_DIRECTION = ['R', 'D', 'L', 'U']
 
-    def __init__(self, direction_vector: Vector, color: str):
+    def __init__(self, direction_vector: Vector2D, color: str):
         self.direction_vector = direction_vector
         self.color = color
 
@@ -51,7 +51,7 @@ class ColorVector:
 
 
 class Shape:
-    def __init__(self, coordinates: list[Vector]):
+    def __init__(self, coordinates: list[Vector2D]):
         self.coordinates = coordinates
         self.__coordinates_repr = [(coordinate.x, coordinate.y) for coordinate in coordinates]
 
@@ -88,8 +88,8 @@ class Digger:
         return self.shape.dug_area
 
     @staticmethod
-    def __grid_corner_coordinates(color_vectors: list[ColorVector]) -> list[Vector]:
-        coordinates = [Vector.zero() for _ in range(len(color_vectors))]
+    def __grid_corner_coordinates(color_vectors: list[ColorVector]) -> list[Vector2D]:
+        coordinates = [Vector2D.zero() for _ in range(len(color_vectors))]
         for i, color_vector in enumerate(color_vectors[:-1], 1):
             coordinates[i] = coordinates[i-1] + color_vector.direction_vector
         return coordinates

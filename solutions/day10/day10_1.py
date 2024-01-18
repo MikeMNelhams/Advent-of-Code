@@ -1,7 +1,7 @@
 from __future__ import annotations
 from handy_dandy_library.file_processing import read_lines
 from handy_dandy_library.string_manipulations import make_blue
-from handy_dandy_library.linear_algebra import Vector, polygon_area, integer_border_points_count
+from handy_dandy_library.linear_algebra import Vector2D, polygon_area, integer_border_points_count
 
 from collections import deque
 
@@ -10,10 +10,10 @@ Grid = list[list]
 
 
 class PipeGrid:
-    UP = Vector((0, -1))
-    DOWN = Vector((0, 1))
-    LEFT = Vector((-1, 0))
-    RIGHT = Vector((1, 0))
+    UP = Vector2D((0, -1))
+    DOWN = Vector2D((0, 1))
+    LEFT = Vector2D((-1, 0))
+    RIGHT = Vector2D((1, 0))
     PIPE_NEIGHBOURS = {'|': (UP, DOWN), '-': (RIGHT, LEFT),
                        'L': (RIGHT, UP), 'J': (UP, LEFT),
                        '7': (DOWN, LEFT), 'F': (RIGHT, DOWN),
@@ -31,11 +31,11 @@ class PipeGrid:
         lines = '\n'.join(''.join(char for char in line) for line in self.grid)
         return lines
 
-    def __getitem__(self, item: Vector) -> set[Vector]:
+    def __getitem__(self, item: Vector2D) -> set[Vector2D]:
         return self.grid[item.y][item.x]
 
-    def coloured_squares(self, square_coordinates: set[Vector]) -> None:
-        representation = '\n'.join(''.join(make_blue(encoding) if Vector((j, i)) in square_coordinates
+    def coloured_squares(self, square_coordinates: set[Vector2D]) -> None:
+        representation = '\n'.join(''.join(make_blue(encoding) if Vector2D((j, i)) in square_coordinates
                                            else encoding
                                            for j, encoding in enumerate(line))
                                    for i, line in enumerate(self.grid))
@@ -52,24 +52,24 @@ class PipeGrid:
         for j in range(n):
             for i in range(m):
                 if grid[j][i] == 'S':
-                    return Vector((i, j))
+                    return Vector2D((i, j))
         raise TypeError
 
     @classmethod
     def from_lines(cls, lines: list[str]):
         return cls(lines)
 
-    def _edge_checks(self, coordinate: Vector) -> (bool, bool, bool, bool):
+    def _edge_checks(self, coordinate: Vector2D) -> (bool, bool, bool, bool):
         return coordinate.x < self.n - 1, coordinate.y > 0, coordinate.y < self.m - 1, coordinate.x > 0
 
-    def _potential_neighbours(self, coordinate: Vector) -> (Vector, Vector, Vector, Vector):
+    def _potential_neighbours(self, coordinate: Vector2D) -> (Vector2D, Vector2D, Vector2D, Vector2D):
         # R U D L
         return coordinate + self.RIGHT, coordinate + self.UP, coordinate + self.DOWN, coordinate + self.LEFT
 
-    def is_pipe(self, coordinate: Vector) -> bool:
+    def is_pipe(self, coordinate: Vector2D) -> bool:
         return self._pipes[coordinate.y][coordinate.x]
 
-    def _surrounding_squares(self, coordinate: Vector) -> set[Vector]:
+    def _surrounding_squares(self, coordinate: Vector2D) -> set[Vector2D]:
         # Right, Up, Down, Left
         potential_neighbours = self._potential_neighbours(coordinate)
         coord_checks = self._edge_checks(coordinate)
@@ -81,11 +81,11 @@ class PipeGrid:
 
         return valid_neighbours
 
-    def neighbours(self, coordinate: Vector) -> set[Vector]:
+    def neighbours(self, coordinate: Vector2D) -> set[Vector2D]:
         valid_neighbours = self._surrounding_squares(coordinate)
         return valid_neighbours
 
-    def s_neighbours(self) -> set[Vector]:
+    def s_neighbours(self) -> set[Vector2D]:
         valid_neighbours = self._surrounding_squares(self.starting_coordinate)
         invalid_neighbours = set()
         for neighbour in tuple(valid_neighbours):
@@ -97,7 +97,7 @@ class PipeGrid:
         return valid_neighbours
 
     @property
-    def main_loop(self) -> (set[Vector], int):
+    def main_loop(self) -> (set[Vector2D], int):
         pipes_connecting_to_start = self.s_neighbours()
         visited = {self.starting_coordinate}
         coordinates_to_visit = deque([(pipe, 1) for pipe in pipes_connecting_to_start])
@@ -120,7 +120,7 @@ class PipeGrid:
         return max_distance
 
     @property
-    def main_loop_shortened_coordinates(self) -> list[Vector]:
+    def main_loop_shortened_coordinates(self) -> list[Vector2D]:
         """ Remove all vertical and horizontal pipes """
         pipes_connecting_to_start = self.s_neighbours()
         coordinates_to_visit = [list(pipes_connecting_to_start)[0]]
