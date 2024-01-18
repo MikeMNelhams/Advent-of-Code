@@ -119,7 +119,6 @@ class Square:
 class LavaGrid:
     def __init__(self, grid: Grid):
         self.grid = grid
-
         self.n = len(grid)
         self.m = len(grid[0])
         print(f"Grid size: ({self.m}, {self.n})")
@@ -227,6 +226,7 @@ def tests2():
     e, path = lava_grid.minimal_route_heat_loss()
     for p in path:
         print(p)
+    print('- ' * 50)
     assert e == 102
 
 
@@ -235,7 +235,9 @@ def tests3():
     # cProfile.run("re.compile(LavaGrid.from_lines(read_lines(\"day_17_1_test_input2.txt\")).minimal_route_heat_loss())")
     lava_grid = LavaGrid.from_lines(read_lines("day_17_1_test_input2.txt"))
     e, path = lava_grid.minimal_route_heat_loss()
-    assert e == 493
+    for p in path:
+        print(p)
+    assert e == 486
 
 
 def main():
@@ -244,9 +246,11 @@ def main():
 
     lava_grid = LavaGrid.from_lines(read_lines("day_17_1_input.txt"))
     print(lava_grid)
-
+    # 814 - coded myself??? - too high
+    # 797 - answer
     e, path = lava_grid.minimal_route_heat_loss()
     print(e)
+
 
 
 if __name__ == "__main__":
