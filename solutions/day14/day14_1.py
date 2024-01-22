@@ -1,121 +1,127 @@
-import sys
-
 from handy_dandy_library.file_processing import read_lines
-from handy_dandy_library.list_operations import binary_search
-from collections import defaultdict
-from bisect import bisect
 
 
-CircleRockCoords = list[int, int]
+type Grid = list[list[int, int]]
+
+
+def empty_grid(number_of_rows: int, number_of_columns: int) -> Grid:
+    return [[0 for _ in range(number_of_columns)] for _ in range(number_of_rows)]
 
 
 class RockNRoller:
-    def __init__(self, lines: list[str]):
-        self.n = len(lines)
-        self.m = len(lines[0])
-        self.hard_rocks = self.__rock_collection(lines, rock_char='#')
-        self.smooth_rocks = self.__rock_collection(lines, rock_char='O')
-        self.__representation = lines
+    HARD_ROCK_CHAR = '#'
+    SMOOTH_ROCK_CHAR = 'O'
+    EMPTY_CHAR = '.'
+    ROCK_ENCODINGS = {EMPTY_CHAR: 0, HARD_ROCK_CHAR: 1, SMOOTH_ROCK_CHAR: 2}
+    ROCK_ENCODINGS_REVERSED = {0: EMPTY_CHAR, 1: HARD_ROCK_CHAR, 2: SMOOTH_ROCK_CHAR}
+
+    def __init__(self, encoded_grid: Grid):
+        self.encoded_grid = encoded_grid
+        self.encoded_grid_transposed = self.__grid_transposed(encoded_grid)
+        self.n = len(encoded_grid)
+        self.m = len(encoded_grid[0])
 
     def __repr__(self) -> str:
-        return "\n".join(self.__representation)
-
-    @staticmethod
-    def __rock_collection(lines: list[str], rock_char: str) -> dict[int, list[int]]:
-        rocks = defaultdict(list)
-
-        for i, line in enumerate(lines):
-            for j, char in enumerate(line):
-                if char == rock_char:
-                    rocks[j].append(i)
-
-        for key, value in rocks.items():
-            value.sort()
-
-        return rocks
-
-    def pad_top_with_hard_rocks(self) -> None:
-        for column, hard_rocks in self.hard_rocks.items():
-            for i in range(len(hard_rocks)):
-                hard_rocks[i] += 1
-
-        for i in range(self.n):
-            self.hard_rocks[i] = [0] + self.hard_rocks[i]
-
-        for smooth_rocks in self.smooth_rocks.values():
-            for i in range(len(smooth_rocks)):
-                smooth_rocks[i] += 1
-
-        self.__representation = ['#'*self.m] + self.__representation
-        self.n += 1
-        return None
-
-    def number_of_valid_smooth_rocks_below_hard_rock(self, column: int, hard_rock: int) -> int:
-        hard_rocks = self.hard_rocks[column]
-        smooth_rocks = self.smooth_rocks[column]
-        hard_rock_search_index, is_found = binary_search(hard_rocks, hard_rock)
-        if not is_found:
-            raise ValueError
-
-        smooth_rock_interval = (hard_rock+1, self.n - 1)
-        if len(hard_rocks) > 1 and hard_rock_search_index < len(hard_rocks) - 1:
-            smooth_rock_interval = (hard_rock+1, hard_rocks[hard_rock_search_index+1])
-
-        total = 0
-        # TODO change this to finding start/end indices using bisect
-        for element in smooth_rocks:
-            if smooth_rock_interval[0] <= element <= smooth_rock_interval[1]:
-                total += 1
-        return total
+        return '\n'.join(''.join(self.ROCK_ENCODINGS_REVERSED[encoding] for encoding in line)
+                         for line in self.encoded_grid)
 
     @property
-    def total_north_rolled_load(self) -> int:
-        total_load = 0
-        for column, hard_rocks in self.hard_rocks.items():
-            print(f"Column: {column} | hard_rocks: {hard_rocks}")
-            for hard_rock in hard_rocks:
-                num_hard_rocks_below = self.number_of_valid_smooth_rocks_below_hard_rock(column, hard_rock)
-                # print(f"column: {column} | hard rock: {hard_rock} | number_below: {num_hard_rocks_below}")
-                for i in range(num_hard_rocks_below):
-                    total_load += (self.n - 1 - hard_rock - i)
-                    print(f"load: {self.n - 1 - hard_rock - i}")
-            print('-'*50)
-        return total_load
+    def hard_rock_encoding(self) -> int:
+        return self.ROCK_ENCODINGS[self.HARD_ROCK_CHAR]
+
+    @property
+    def smooth_rock_encoding(self) -> int:
+        return self.ROCK_ENCODINGS[self.SMOOTH_ROCK_CHAR]
+
+    @classmethod
+    def from_lines(cls, lines: list[str]):
+        n = len(lines)
+        m = len(lines[0])
+        encoded_grid = empty_grid(n, m)
+
+        for i, row in enumerate(lines):
+            for j, char in enumerate(row):
+                encoded_grid[i][j] = cls.ROCK_ENCODINGS[char]
+
+        return cls(encoded_grid)
+
+    @staticmethod
+    def __grid_transposed(grid: Grid) -> Grid:
+        n = len(grid)
+        m = len(grid[0])
+        transposed_grid = empty_grid(m, n)
+
+        for i, row in enumerate(grid):
+            for j, encoding in enumerate(row):
+                transposed_grid[j][i] = encoding
+
+        return transposed_grid
+
+    def roll_north(self) -> None:
+        hard_rock_encoding = self.hard_rock_encoding
+        smooth_rock_encoding = self.smooth_rock_encoding
+        hard_rock_positions = [[i for i, encoding in enumerate(self.encoded_grid_transposed[col_idx])
+                                        if encoding == hard_rock_encoding] + [self.n] for col_idx in range(self.m)]
+        smooth_rock_positions = [[i for i, encoding in enumerate(self.encoded_grid_transposed[col_idx])
+                                        if encoding == smooth_rock_encoding] for col_idx in range(self.m)]
+
+        new_grid = empty_grid(self.n, self.m)
+
+        for j, hard_rocks in enumerate(hard_rock_positions):
+            for hard_rock in hard_rocks[:-1]:
+                new_grid[hard_rock][j] = hard_rock_encoding
+
+        for col_idx in range(self.m):
+            hard_idx = 0
+            current_smooth_rock_idx = 0
+            for smooth_rock in smooth_rock_positions[col_idx]:
+                hard_rock = hard_rock_positions[col_idx][hard_idx]
+                while smooth_rock > hard_rock:
+                    current_smooth_rock_idx = hard_rock + 1
+                    hard_idx += 1
+                    hard_rock = hard_rock_positions[col_idx][hard_idx]
+                new_grid[current_smooth_rock_idx][col_idx] = smooth_rock_encoding
+                current_smooth_rock_idx += 1
+
+        self.encoded_grid = new_grid
+        self.encoded_grid_transposed = self.__grid_transposed(new_grid)
+        return None
+
+    @property
+    def total_load(self) -> int:
+        total = 0
+        smooth_rock_encoding = self.smooth_rock_encoding
+
+        for i, row in enumerate(reversed(self.encoded_grid), 1):
+            for j, encoding in enumerate(row):
+                if encoding == smooth_rock_encoding:
+                    total += i
+        return total
+
+
+def test1():
+    rock_roller = RockNRoller.from_lines(read_lines("day_14_1_test_input1.txt"))
+    rock_roller.roll_north()
+    assert rock_roller.total_load == 136
+
+
+def test2():
+    rock_roller = RockNRoller.from_lines(read_lines("day_14_1_test_input2.txt"))
+    assert rock_roller.total_load == 136
 
 
 def tests():
-    rock_roller = RockNRoller(read_lines("day_14_1_test_input1.txt"))
-    print(f"smooth: {rock_roller.smooth_rocks}",)
-    print(f"hard: {rock_roller.hard_rocks}")
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(0, 8) == 0
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(0, 9) == 0
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(2, 5) == 2
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(3, 3) == 0
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(4, 1) == 1
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(5, 0) == 0
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(5, 2) == 1
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(5, 6) == 0
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(5, 8) == 0
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(5, 9) == 0
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(6, 2) == 1
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(6, 8) == 0
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(7, 5) == 1
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(7, 8) == 0
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(8, 4) == 0
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(9, 1) == 1
-    assert rock_roller.number_of_valid_smooth_rocks_below_hard_rock(9, 5) == 1
-    print(rock_roller, '\n')
-    rock_roller.pad_top_with_hard_rocks()
-    print(rock_roller.total_north_rolled_load)
-    assert rock_roller.total_north_rolled_load == 136
+    test1()
+    test2()
 
 
 def main():
     tests()
 
-    rock_roller = RockNRoller(read_lines("day_14_1_input.txt"))
-    rock_roller.pad_top_with_hard_rocks()
-    print(rock_roller.total_north_rolled_load)
+    rock_roller = RockNRoller.from_lines(read_lines("day_14_1_input.txt"))
+    rock_roller.roll_north()
+    t = rock_roller.total_load
+    assert t == 108889
 
 
 if __name__ == "__main__":
