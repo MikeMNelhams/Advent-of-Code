@@ -6,7 +6,8 @@ from collections import deque, defaultdict
 
 
 type Grid = list[list[int]]
-type adjacency_set2d = dict[Vector, set[Vector]]
+type Adjacency_set2d = dict[Vector, set[Vector]]
+type Adjacency_weights = dict[tuple[Vector, Vector], int]
 
 INF = 10**20
 
@@ -102,24 +103,24 @@ class SnowIsland:
         encoded_grid = [[cls.encodings[char] for char in line] for line in lines]
         return cls(encoded_grid, start_position, end_position)
 
-    def __edge_checks(self, coordinate: Vector) -> (bool, bool, bool, bool):
+    def _edge_checks(self, coordinate: Vector) -> (bool, bool, bool, bool):
         return coordinate.y < self.m - 1, coordinate.x > 0, coordinate.x < self.n - 1, coordinate.y > 0
 
-    def __blocking_slope_checks(self, potential_neighbours, outside_grid_checks):
+    def _blocking_slope_checks(self, potential_neighbours, outside_grid_checks):
         is_not_blocking_slope = (edge_check if not edge_check
                                  else self.reverse_encodings[self[potential_neighbours[i]]] != self.slope_chars[i]
                                  for i, edge_check in enumerate(outside_grid_checks))
         return is_not_blocking_slope
 
-    def __potential_neighbours(self, coordinate: Vector) -> (Vector, Vector, Vector, Vector):
+    def _potential_neighbours(self, coordinate: Vector) -> (Vector, Vector, Vector, Vector):
         return coordinate + self.RIGHT, coordinate + self.UP, coordinate + self.DOWN, coordinate + self.LEFT
 
-    def __coord_checks(self, coordinate: Vector, potential_neighbours) -> (bool, bool, bool, bool):
-        is_not_outside_grid = self.__edge_checks(coordinate)
+    def _coord_checks(self, coordinate: Vector, potential_neighbours) -> (bool, bool, bool, bool):
+        is_not_outside_grid = self._edge_checks(coordinate)
         is_not_forest = (is_not_outside_grid[i] if not is_not_outside_grid[i]
                          else not self.is_forest(potential_neighbours[i])
                          for i in range(4))
-        is_not_blocking_slope = self.__blocking_slope_checks(potential_neighbours, is_not_outside_grid)
+        is_not_blocking_slope = self._blocking_slope_checks(potential_neighbours, is_not_outside_grid)
         return (all(checks) for checks in zip(is_not_forest, is_not_blocking_slope))
 
     def is_forest(self, coordinate: Vector) -> bool:
@@ -127,36 +128,44 @@ class SnowIsland:
 
     def neighbours(self, coordinate: Vector) -> set[Vector]:
         # Right, Up, Down, Left
-        potential_neighbours = self.__potential_neighbours(coordinate)
+        potential_neighbours = self._potential_neighbours(coordinate)
         for i in range(4):
             if self[coordinate] == i + 2:
                 return {potential_neighbours[i]}
-        coord_checks = self.__coord_checks(coordinate, potential_neighbours)
+        coord_checks = self._coord_checks(coordinate, potential_neighbours)
         valid_neighbours = {neighbour for i, (neighbour, is_valid) in enumerate(zip(potential_neighbours, coord_checks)) if is_valid}
         return valid_neighbours
 
-    def to_adjacency_set(self) -> adjacency_set2d:
+    def to_adjacency_set(self) -> (Adjacency_set2d, Adjacency_weights):
         adjacency_set = defaultdict(set)
-        nodes_to_visit = [self.start_position]
+        nodes_to_visit = deque([self.start_position])
+        adjacency_set[self.start_position] = set()
         while nodes_to_visit:
-            node = nodes_to_visit.pop()
-            potential_neighbours = self.neighbours(node)
-            for potential_neighbour in potential_neighbours:
+            node = nodes_to_visit.popleft()
+            for potential_neighbour in self.neighbours(node):
                 if node not in adjacency_set[potential_neighbour]:
                     adjacency_set[node].add(potential_neighbour)
                     nodes_to_visit.append(potential_neighbour)
-        return adjacency_set
+        distance_weights = defaultdict(lambda: 1)
+        return adjacency_set, distance_weights
 
 
 class DirectedGraph2D:
-    def __init__(self, adjacency_set: adjacency_set2d):
+    def __init__(self, adjacency_set: Adjacency_set2d, adjacency_weights: Adjacency_weights):
         self.adjacency_set = adjacency_set
+        self.adjacency_weights = adjacency_weights
+        print(set(adjacency_set.keys()))
+        print({value for values in adjacency_set.values() for value in values})
 
     def __repr__(self) -> str:
         return str(self.adjacency_set)
 
     def __getitem__(self, item: Vector) -> set[Vector]:
         return self.adjacency_set[item]
+
+    @property
+    def given_traversal_order(self) -> list[Vector]:
+        return list(self.adjacency_set.keys())
 
     def visually_sorted(self, grid_size: tuple[int, int]) -> list[Vector]:
         n = grid_size[0]
@@ -189,11 +198,10 @@ class DirectedGraph2D:
 
         return False
 
-    def longest_path_size(self, start_position: Vector, grid_size: tuple[int, int]) -> list[Vector]:
+    def longest_acyclic_path_size(self, start_position: Vector, grid_size: tuple[int, int]) -> list[Vector]:
         assert self.is_acyclic(start_position)
         topological_sort = self.visually_sorted(grid_size)
         distances = {node: 0 for node in topological_sort}
-        distances[topological_sort[0]] = 0
         visited = {topological_sort[-1]}
         to_visit = [node for node in reversed(topological_sort)]
 
@@ -203,13 +211,13 @@ class DirectedGraph2D:
             for successor in successors:
                 if successor not in visited:
                     dfs(successor)
-                distances[_node] = max(distances[_node], 1 + distances[successor])
+                distances[_node] = max(distances[_node], self.adjacency_weights[successor] + distances[successor])
 
         for node in to_visit:
             if node not in visited:
                 dfs(node)
-
-        return max(distances.values())
+        print(distances)
+        return distances[start_position]
 
 
 def tests():
@@ -225,23 +233,23 @@ def tests():
     assert snow_island.neighbours(x1 + snow_island.RIGHT) == {x1, x2}
     assert snow_island.neighbours(x2) == {x2 + snow_island.DOWN}
     assert snow_island.neighbours(x2 + snow_island.DOWN) == {x2 + 2 * snow_island.DOWN}
-    snow_island_graph = DirectedGraph2D(snow_island.to_adjacency_set())
+    snow_island_graph = DirectedGraph2D(*snow_island.to_adjacency_set())
     grid_size = (snow_island.n, snow_island.m)
     print(f"Visually sorted: {snow_island_graph.visually_sorted(grid_size)}")
     print(f"Is the graph acyclic?: {snow_island_graph.is_acyclic(start_position)}")
-    assert snow_island_graph.longest_path_size(start_position, grid_size) == 94
+    assert snow_island_graph.longest_acyclic_path_size(start_position, grid_size) == 94
 
 
 def main():
     tests()
 
-    snow_island = SnowIsland.from_lines(read_lines("day23_1_input.txt"))
+    snow_island = SnowIsland.from_lines(read_lines("day_23_1_input.txt"))
     print(snow_island)
-    snow_island_graph = DirectedGraph2D(snow_island.to_adjacency_set())
+    snow_island_graph = DirectedGraph2D(*snow_island.to_adjacency_set())
     grid_size = (snow_island.n, snow_island.m)
     start_position = snow_island.start_position
 
-    t = snow_island_graph.longest_path_size(start_position, grid_size)
+    t = snow_island_graph.longest_acyclic_path_size(start_position, grid_size)
     print(t)
 
 
