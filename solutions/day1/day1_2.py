@@ -4,7 +4,7 @@ from typing import Callable
 
 
 NUMERAL_FIRST_LETTERS = {"o", "t", "f", "s", "e", "n"}
-NUMERAL_LAST_LETTERS = {"e", "o", "r", "x", "n", "t"}
+NUMERAL_LAST_LETTERS = {"e", "o", "r", "part_list", "n", "t"}
 
 
 def digit_or_numeral_first_match(phrase: str, match_pattern: Callable) -> int:

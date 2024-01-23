@@ -145,7 +145,7 @@ class BrickFrontier:
     def __init__(self, x_size: int, y_size: int):
         self.x_max = x_size + 1
         self.y_max = y_size + 1
-        # x,y -> [height, brick @ height @ (x,y)]
+        # part_list,y -> [height, brick @ height @ (part_list,y)]
         self.data = [[[0, None] for _ in range(self.x_max)] for _ in range(self.y_max)]
 
     def __repr__(self) -> str:

@@ -43,6 +43,14 @@ def find_first_char_index(phrase: str, target_char: str) -> int:
     return -1
 
 
+def find_first_char_index_from_charset(phrase: str, target_chars: set[str]) -> int:
+    for i, char in enumerate(phrase):
+        if char in target_chars:
+            return i
+
+    return -1
+
+
 def parse_ints(phrase: str) -> list[int]:
     return [int(substring) for substring in phrase.split(' ') if substring != '']
 
