@@ -79,7 +79,7 @@ def total_valid_game_ids(games: list[Game]):
 
 
 def total_valid_game_ids_from_file_path(file_path: str) -> int:
-    games = [Game.from_string(game_phrase) for game_phrase in read_lines(file_path)]
+    games = (Game.from_string(game_phrase) for game_phrase in read_lines(file_path))
     return total_valid_game_ids(games)
 
 
