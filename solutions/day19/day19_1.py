@@ -101,6 +101,8 @@ class RuleSet:
 
 
 class Policy:
+    part_types = ('x', 'm', 'a', 's')
+
     def __init__(self, rule_sets: dict[str, RuleSet]):
         self.rule_sets = rule_sets
 
@@ -127,10 +129,9 @@ class Policy:
         return cls({rule_set.name: rule_set for rule_set in rule_sets})
 
     def number_of_distinct_accepted_combinations(self) -> int:
-        # in{s<1351:px,qqz}
         nodes_to_check = [("in", {})]
         total = 0
-        part_types = ('x', 'm', 'a', 's')
+
         while nodes_to_check:
             rule_name, bounds = nodes_to_check.pop()
 
@@ -139,7 +140,7 @@ class Policy:
 
             if rule_name == "A":
                 lengths = [1 + bounds.get((part_type, 0), 4000) - bounds.get((part_type, 1), 1) for part_type in
-                           part_types]
+                           self.part_types]
                 total += reduce(operator.mul, lengths)
                 continue
 
@@ -149,10 +150,7 @@ class Policy:
                 bounds_copy1 = bounds.copy()
                 op_code = rule.criteria.operation_encoding
                 threshold = rule.criteria.threshold
-                if op_code:
-                    bounds_copy1[(rule.part_type, op_code)] = threshold + 1
-                else:
-                    bounds_copy1[(rule.part_type, op_code)] = threshold - 1
+                bounds_copy1[(rule.part_type, op_code)] = threshold + -1 + 2 * op_code
                 bounds[(rule.part_type, 1 - op_code)] = threshold
                 nodes_to_check.append((rule.target, bounds_copy1))
 
@@ -160,13 +158,9 @@ class Policy:
             bounds_copy2 = bounds.copy()
             op_code = final_rule.criteria.operation_encoding
             threshold = final_rule.criteria.threshold
-
-            if op_code:
-                bounds_copy2[(final_rule.part_type, op_code)] = threshold + 1
-            else:
-                bounds_copy2[(final_rule.part_type, op_code)] = threshold - 1
-            nodes_to_check.append((final_rule.target, bounds_copy2))
+            bounds_copy2[(final_rule.part_type, op_code)] = threshold - 1 + 2 * op_code
             bounds[(final_rule.part_type, 1 - op_code)] = threshold
+            nodes_to_check.append((final_rule.target, bounds_copy2))
             nodes_to_check.append((rule_set.default_target, bounds))
         return total
 
