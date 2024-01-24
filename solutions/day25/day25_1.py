@@ -2,6 +2,8 @@ from __future__ import annotations
 from handy_dandy_library.file_processing import read_lines
 
 from collections import defaultdict
+from itertools import pairwise
+from heapq import heappop, heappush
 
 
 type Adjacency_set2d = dict[str, set[str]]
@@ -48,7 +50,30 @@ class DirectedGraph2D:
         return cls(dict(adjacency_set))
 
     def minimal_cuts_3_edge_connected_graph(self) -> set[tuple[str, str]]:
-        # We need to use tarjan's bridge finding algorithm with chained decomposition.
+        # I cannot get this algorithm to work:
+        # I cannot find any implementation of this algorithm.
+        # In theory, the maths is correct, but it's too hard
+        # The paper:
+        # https://pdf.sciencedirectassets.com/272975/1-s2.0-S1570866709X0002X/1-s2.0-S1570866708000415/main.pdf?
+        # X-Amz-Security-Token=IQoJb3JpZ2luX2VjEC4aCXVzLWVhc3QtMSJGMEQCIHGrSI064yyL4f%2FRfKVNZ7qxpvg3m4vdNeJ0OSM9Wrz%
+        # 2FAiBNBx0Ay2O2c7AU9QdT5qpgFK7GTX2ABJAYhVguaxK5kCq7BQjX%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAUaDDA1OTAwMzU0Njg2NS
+        # IMEdXKEJn5%2Fg55joszKo8F1XeOhNTgW5zL%2Fx0uOpYTzaFLRn%2BK5PwYnIkBxIzwFjJm48Lv3R%2Bp1urYm0Z7aOJxNqEmrPM8zxexSo
+        # MQgEnGiBSqT0Vy4iR9Csn6WvqRTqkk4hrmpCTxg%2FZtUFMpH1BfbVz5IrdQVDlA4pknOgcdaSuZfrA3fJ8DCAgty1mfLHkAPUo%2BW0eh8Wh
+        # YcvXdBzlKVuQYhiYhXKnqxapCshoR2Ybw5C%2FM%2BGNHfHh9zozC46l2WqMzuAKx50cuyPYiBkEoaMB7n5PawQr94ibWvKl7JUgCz5biFzx3
+        # VK4p6XdPWn0rjv6fj4oharKxXuEnQQ2XBeKX39qBdPCvN1o2lXvZA8o8raw0V7770Rq4vow%2FxvkcfZTpmHnBUBrCZcXyzqD%2B6eIkOQ%2F
+        # 9OcpOwg60T7uAP%2B82MB%2FLI1zz4UKqbM3CbhTwmnY4MmtW1W6lm%2F4v4DOwSI%2Ba%2FQs4MuTk8iwo%2F5s4ZFTjuD1jSX3R0HGLhjT1
+        # FYxQXbFWQc32hIoRqcBZGXWcY%2BNdF69eZ543F%2FdYIJqL1t%2FhAFOpZ1u7cv0vU09h6bHVxYOkG6G5weEnBcj1C2iFfrYMgx4zF4SgULX
+        # 0FqhiqDvMWHcZrgfrqo37Nq4tvWiKRt89c%2FHDcOs3emeK08zlAUt%2BTJgT2XnE58mEPk0rd%2FI0Wha%2F2OY52vPGbWu9MaQoPD%2F96J
+        # GvtKkosN%2Frf%2BnW8F14CpklyfgwfI5IeR6ariLwtLMUB11%2BUoI8oidTOrhXuv%2BJTE%2F9ccnEaNzhZ76xDZgJAZeZsRQXYVhat3YND
+        # B4kPDQQ0Jd4BgIjcKuBgSxu94zInryOgluc38nMnSjZg1w9Fa1SCdM18mVSLDhrqbG81A%2B271152OkEN3xtbDDa26StBjqyATyYXtfxWe9h
+        # yRtbEvJBPjDROvdXJM%2FXtV3DS5EK2S82t5fjBbywaxJhSmf5WcPwvPvs21GA94ro8Kcn%2Fe4piH8BczgwSXU6zVet3r2xPGxI971RK9tTB
+        # GTgu%2B5F1vy2MzdDhIUGKFiJF9z%2FY1Ikv5VjTUbxJzb8dsgFRXKoDpU3se1r7VRwRxy38EBpifNeRpro0RjJl4WZl54VqYQjdfljsDAvCa
+        # 3qNVsc0XVji0ue7fo%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240118T145537Z&X-Amz-SignedHeaders=host&X-
+        # Amz-Expires=300&X-Amz-Credential=ASIAQ3PHCVTY3HCZSO2K%2F20240118%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-
+        # Signature=0c66b6737154cf98b51f8f47a948e197f5db08f3fa2c0fcd92802e33a9e3e8ce&hash=431e9707f3adca0d444982db9bb2d
+        # 6b0d1b4f5b301a47a101cf10b2a1ce88490&host=68042c943591013ac2b2430a89b270f6af2c76d8dfd086a07176afe7c76c2c61&pii
+        # =S1570866708000415&tid=spdf-424f75a8-9a6e-4d5f-a1aa-85e1e32a1298&sid=40a930c14555f44e8f49d3d7873a4a72110egxrq
+        # b&type=client&tsoh=d3d3LnNjaWVuY2VkaXJlY3QuY29t&ua=1d025a56515005045152&rr=8477ae135e10531a&cc=gb
         G = self.adjacency_set
         visited = set()
 
@@ -157,16 +182,51 @@ class DirectedGraph2D:
         print(e_cut)
         return e_cut
 
+    def minimal_cuts_3_brute_force_disjoint_product(self) -> int:
+        G = self.adjacency_set
+        G_len = len(G)
+        # Thanks to reddit for the set-masking optimisation ^^
+
+        def bfs(start, exclusions={}):
+            visited = {start: (0, [start])}
+            heap = [(0, start, [start])]
+            while len(heap) > 0:
+                dist, node, path = heappop(heap)
+                for de in G[node]:
+                    if (node, de) in exclusions:
+                        continue
+                    if de not in visited:
+                        visited[de] = (dist + 1, path + [de])
+                        heappush(heap, (dist + 1, de, path + [de]))
+            return len(visited), visited, node
+
+        start = next(k for k in G)
+        _, visited, stop = bfs(start)
+        for x1, y1 in pairwise(visited[stop][1]):
+            exclusions = {(x1, y1), (y1, x1)}
+            _, visited2, _ = bfs(start, exclusions)
+            for x2, y2 in pairwise(visited2[stop][1]):
+                exclusions = {(x1, y1), (y1, x1), (x2, y2), (y2, x2)}
+                _, visited3, _ = bfs(start, exclusions)
+                for x3, y3 in pairwise(visited3[stop][1]):
+                    exclusions = {(x1, y1), (y1, x1), (x2, y2), (y2, x2), (x3, y3), (y3, x3)}
+                    lena, _, _ = bfs(start, exclusions)
+                    if G_len != lena:
+                        return lena * (G_len - lena)
+
 
 def tests():
     directed_graph = DirectedGraph2D.from_lines(read_lines("day_25_1_test_input1.txt"))
-    print(directed_graph)
-    edge_cuts = directed_graph.minimal_cuts_3_edge_connected_graph()
-
+    edge_cut_product = directed_graph.minimal_cuts_3_brute_force_disjoint_product()
+    assert edge_cut_product == 54
 
 
 def main():
     tests()
+
+    directed_graph = DirectedGraph2D.from_lines(read_lines("day_25_1_input.txt"))
+    edge_cut_product = directed_graph.minimal_cuts_3_brute_force_disjoint_product()
+    print(edge_cut_product)
 
 
 if __name__ == "__main__":
