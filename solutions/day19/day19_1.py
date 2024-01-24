@@ -1,11 +1,16 @@
 from handy_dandy_library.file_processing import read_lines
-from handy_dandy_library.string_manipulations import find_first_char_index, find_first_char_index_from_charset
+from handy_dandy_library.string_manipulations import find_first_char_index
+
+from collections import defaultdict
+from functools import reduce
+import operator
 
 from typing import Callable
 
 type BinaryOperator = Callable[[int, int], bool]
 type Criteria = Callable[[int], bool]
 type Part = dict[str, int]
+type XMAS_Bound = dict[(str, int), int]
 
 
 def gt(a: int, b: int) -> bool:
@@ -24,13 +29,14 @@ class BinaryOperatorWrapper:
     def __init__(self, base_function: BinaryOperator, threshold: int):
         self.base_function = base_function
         self.threshold = threshold
+        self.operation_encoding = 0 if base_function.__name__ == "lt" else 1
 
     def __call__(self, x: int) -> bool:
         return self.base_function(x, self.threshold)
 
 
 class Rule:
-    def __init__(self, part_type: str, target: str, criteria: Criteria):
+    def __init__(self, part_type: str, target: str, criteria: BinaryOperatorWrapper):
         self.part_type = part_type
         self.target = target
         self.criteria = criteria
@@ -46,11 +52,14 @@ class RuleSet:
     CHAR_TO_OPERATORS = {'>': gt, '<': lt, '=': eq}
     OPERATOR_CHARS = {'<', '>', '='}
 
-    def __init__(self, name: str, rules: list[Rule | str], default_target: str):
+    def __init__(self, name: str, rules: list[Rule], default_target: str):
         self.name = name
         self.rules = rules
         self.is_always_default = rules[0] is str
         self.default_target = default_target
+
+    def __len__(self) -> int:
+        return len(self.rules)
 
     def __call__(self, part: Part) -> str:
         if self.is_always_default:
@@ -116,6 +125,50 @@ class Policy:
             raise TypeError
         rule_sets = (RuleSet.from_line(line) for line in lines[:empty_line_index])
         return cls({rule_set.name: rule_set for rule_set in rule_sets})
+
+    def number_of_distinct_accepted_combinations(self) -> int:
+        # in{s<1351:px,qqz}
+        nodes_to_check = [("in", {})]
+        total = 0
+        part_types = ('x', 'm', 'a', 's')
+        while nodes_to_check:
+            rule_name, bounds = nodes_to_check.pop()
+
+            if rule_name == "R":
+                continue
+
+            if rule_name == "A":
+                lengths = [1 + bounds.get((part_type, 0), 4000) - bounds.get((part_type, 1), 1) for part_type in
+                           part_types]
+                total += reduce(operator.mul, lengths)
+                continue
+
+            rule_set = self.rule_sets[rule_name]
+
+            for rule in rule_set.rules[:-1]:
+                bounds_copy1 = bounds.copy()
+                op_code = rule.criteria.operation_encoding
+                threshold = rule.criteria.threshold
+                if op_code:
+                    bounds_copy1[(rule.part_type, op_code)] = threshold + 1
+                else:
+                    bounds_copy1[(rule.part_type, op_code)] = threshold - 1
+                bounds[(rule.part_type, 1 - op_code)] = threshold
+                nodes_to_check.append((rule.target, bounds_copy1))
+
+            final_rule = rule_set.rules[-1]
+            bounds_copy2 = bounds.copy()
+            op_code = final_rule.criteria.operation_encoding
+            threshold = final_rule.criteria.threshold
+
+            if op_code:
+                bounds_copy2[(final_rule.part_type, op_code)] = threshold + 1
+            else:
+                bounds_copy2[(final_rule.part_type, op_code)] = threshold - 1
+            nodes_to_check.append((final_rule.target, bounds_copy2))
+            bounds[(final_rule.part_type, 1 - op_code)] = threshold
+            nodes_to_check.append((rule_set.default_target, bounds))
+        return total
 
 
 class PartManager:
