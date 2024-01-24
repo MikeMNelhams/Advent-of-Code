@@ -139,9 +139,7 @@ class Policy:
                 continue
 
             if rule_name == "A":
-                lengths = [1 + bounds.get((part_type, 0), 4000) - bounds.get((part_type, 1), 1) for part_type in
-                           self.part_types]
-                total += reduce(operator.mul, lengths)
+                total += self.bound_volume(bounds)
                 continue
 
             rule_set = self.rule_sets[rule_name]
@@ -163,6 +161,11 @@ class Policy:
             nodes_to_check.append((final_rule.target, bounds_copy2))
             nodes_to_check.append((rule_set.default_target, bounds))
         return total
+
+    def bound_volume(self, bounds) -> int:
+        lengths = (1 + bounds.get((part_type, 0), 4000) - bounds.get((part_type, 1), 1) for part_type in
+                   self.part_types)
+        return reduce(operator.mul, lengths)
 
 
 class PartManager:
