@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from handy_dandy_library.file_processing import read_lines
-from handy_dandy_library.string_manipulations import horizontal_rule
 
 
 type Grid = list[list[int, int]]
