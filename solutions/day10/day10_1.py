@@ -6,7 +6,7 @@ from handy_dandy_library.linear_algebra import Vector2D, polygon_area, integer_b
 from collections import deque
 
 
-Grid = list[list]
+type Grid = list[list]
 
 
 class PipeGrid:
@@ -63,7 +63,6 @@ class PipeGrid:
         return coordinate.x < self.n - 1, coordinate.y > 0, coordinate.y < self.m - 1, coordinate.x > 0
 
     def _potential_neighbours(self, coordinate: Vector2D) -> (Vector2D, Vector2D, Vector2D, Vector2D):
-        # R U D L
         return coordinate + self.RIGHT, coordinate + self.UP, coordinate + self.DOWN, coordinate + self.LEFT
 
     def is_pipe(self, coordinate: Vector2D) -> bool:
@@ -82,8 +81,7 @@ class PipeGrid:
         return valid_neighbours
 
     def neighbours(self, coordinate: Vector2D) -> set[Vector2D]:
-        valid_neighbours = self._surrounding_squares(coordinate)
-        return valid_neighbours
+        return self._surrounding_squares(coordinate)
 
     def s_neighbours(self) -> set[Vector2D]:
         valid_neighbours = self._surrounding_squares(self.starting_coordinate)
@@ -121,7 +119,7 @@ class PipeGrid:
 
     @property
     def main_loop_shortened_coordinates(self) -> list[Vector2D]:
-        """ Remove all vertical and horizontal pipes """
+        """ Remove all vertical and horizontal pipes (Edge contraction)"""
         pipes_connecting_to_start = self.s_neighbours()
         coordinates_to_visit = [list(pipes_connecting_to_start)[0]]
         previous = self.starting_coordinate
