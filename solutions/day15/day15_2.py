@@ -1,16 +1,16 @@
 from day15_1 import Hasher, read_single_line_csv
 
-
-OPERATION_CHARS = ('=', '-')
 type DataEntry = tuple[str, str, int] | tuple[str, str]
 
 
 class HashMap:
+    OPERATION_CHARS = ('=', '-')
+
     def __init__(self):
         self.data = [{} for _ in range(256)]
 
     def process(self, entry: DataEntry) -> None:
-        if entry[1] not in OPERATION_CHARS:
+        if entry[1] not in self.OPERATION_CHARS:
             raise TypeError
         hash_key = Hasher(entry[0]).encoded
         if entry[1] == '-':
