@@ -15,9 +15,6 @@ def main():
     print(totals)
     t = sum(totals)
     print(t)
-    # 138100 too high
-    # 91900 too high
-    # 41859 too high
 
 
 if __name__ == "__main__":

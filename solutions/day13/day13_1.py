@@ -1,6 +1,6 @@
 from handy_dandy_library.file_processing import read_lines
 
-RockCoordinates = list[list[int]]
+type RockCoordinates = list[list[int]]
 
 
 class MirrorMapper:
@@ -82,7 +82,7 @@ class MirrorMapper:
 def read_puzzles(lines: list[str]) -> list[list[str]]:
     puzzles = []
     indices = [i for i, line in enumerate(lines) if line == ''] + [len(lines)]
-    print(indices)
+
     start = 0
     for index in indices:
         puzzle = lines[start:index]
@@ -121,7 +121,6 @@ def test1():
     assert not mirror_mapper.is_mirrored(5, 1)
     assert not mirror_mapper.is_mirrored(6, 1)
     assert not mirror_mapper.is_mirrored(7, 1)
-    print(mirror_mapper.mirror_summary())
     assert mirror_mapper.mirror_summary() == 5
 
 
