@@ -23,7 +23,7 @@ class RouteManager2(RouteManager):
         for j, current_node_name in enumerate(current_node_names):
             while current_node_name[-1] != 'Z':
                 print(f"i: {i} | {current_node_name} {self.mappings[current_node_name]}")
-                # print(f"i: {i} | {current_node_name} {self.mappings[current_node_name]}")
+
                 current_lr_code = int(lr_code[i])
                 current_node_name = self.mappings[current_node_name][current_lr_code]
 
