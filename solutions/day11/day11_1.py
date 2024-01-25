@@ -4,7 +4,7 @@ from handy_dandy_library.file_processing import read_lines
 from itertools import combinations
 
 
-GalaxyCoordinates = list[list[int, int]]
+type GalaxyCoordinates = list[list[int, int]]
 
 
 class Cosmos:
@@ -73,7 +73,6 @@ def galaxy_brain_sum(lines: list[str], expansion_rate=1) -> int:
 
 
 def tests():
-    # set([[0, 4], [1, 9], [2, 0], [5, 8], [6, 1], [7, 12], [10, 9], [11, 0], [11, 5]])
     assert coordinate_distance([6, 1], [11, 5]) == 9
     assert galaxy_brain_sum(read_lines("day_11_1_test_input.txt")) == 374
 
