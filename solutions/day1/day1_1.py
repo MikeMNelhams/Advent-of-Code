@@ -1,16 +1,10 @@
 from handy_dandy_library.file_processing import read_lines
+from handy_dandy_library.string_manipulations import first_digit
 
 
 def calibration_value(phrase: str) -> int:
     total = 10 * first_digit(phrase) + first_digit(reversed(phrase))
     return total
-
-
-def first_digit(phrase: str) -> int:
-    for char in phrase:
-        if char.isdigit():
-            return int(char)
-    raise TypeError
 
 
 def sum_calibration_values(file_path: str) -> int:

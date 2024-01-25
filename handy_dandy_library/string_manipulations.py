@@ -51,6 +51,13 @@ def find_first_char_index_from_charset(phrase: str, target_chars: set[str]) -> i
     return -1
 
 
+def first_digit(phrase: str) -> int:
+    for char in phrase:
+        if char.isdigit():
+            return int(char)
+    raise TypeError
+
+
 def parse_ints(phrase: str) -> list[int]:
     return [int(substring) for substring in phrase.split(' ') if substring != '']
 
