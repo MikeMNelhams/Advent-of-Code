@@ -1,13 +1,16 @@
-from collections import Counter
-
 from handy_dandy_library.file_processing import read_lines
 
+from collections import Counter
 
-CARD_ORDERING = {'A': 13, 'K': 12, 'Q': 11, 'J': 10, 'T': 9, '9': 8, '8': 7, '7': 6,
-                 '6': 5, '5': 4, '4': 3, '3': 2, '2': 1}
+from typing import Callable
+
+
 
 
 class HandReader:
+    CARD_ORDERING = {'A': 13, 'K': 12, 'Q': 11, 'J': 10, 'T': 9, '9': 8, '8': 7, '7': 6,
+                     '6': 5, '5': 4, '4': 3, '3': 2, '2': 1}
+
     def __init__(self, hand: str):
         self.hand = hand
         self._card_counts = Counter(hand)
@@ -57,8 +60,8 @@ class HandReader:
 
     def lesser_hand_of_same_type(self, other) -> bool:
         for char1, char2 in zip(self.hand, other.hand):
-            char1_value = CARD_ORDERING[char1]
-            char2_value = CARD_ORDERING[char2]
+            char1_value = self.CARD_ORDERING[char1]
+            char2_value = self.CARD_ORDERING[char2]
             if char1_value < char2_value:
                 return True
             elif char1_value > char2_value:
@@ -75,22 +78,29 @@ class HandReader:
             return self.lesser_hand_of_same_type(other)
         return self.hand_type < other.hand_type
 
+    def update_hand_data(self) -> None:
+        self._card_counts = Counter(self.hand)
+        self._most_common = self._card_counts.most_common()
+        self.hand_type = self._get_hand_type()
+        return None
 
-def parse_hand_bids(lines: list[str]) -> list[list[HandReader, int]]:
+
+def parse_hand_bids(lines: list[str], hand_reader: Callable=HandReader) -> list[list[HandReader, int]]:
     hands_and_bids = [line.split(' ') for line in lines]
     for i in range(len(hands_and_bids)):
-        hands_and_bids[i] = (HandReader(hands_and_bids[i][0]), int(hands_and_bids[i][1]))
+        hands_and_bids[i] = (hand_reader(hands_and_bids[i][0]), int(hands_and_bids[i][1]))
     return hands_and_bids
 
 
-def total_winnings(lines: list[str]) -> int:
-    hands_and_bids = parse_hand_bids(lines)
+def total_winnings(lines: list[str], hand_reader: Callable=HandReader) -> int:
+    hands_and_bids = parse_hand_bids(lines, hand_reader)
 
     def pair(x):
         return x[0]
 
     hands_and_bids.sort(key=pair)
-    print(hands_and_bids)
+    for i, hand_bid in enumerate(hands_and_bids):
+        print(f"{hand_bid[0]} is rank {i + 1}")
     total = sum(pair[1] * (i+1) for i, pair in enumerate(hands_and_bids))
     return total
 
@@ -104,11 +114,10 @@ def tests():
     assert not HandReader("AAAAA").is_4_of_a_kind()
 
     assert HandReader("AAAKK").is_full_house()
-    assert HandReader("AAAK1").is_3_of_a_kind()
     assert not HandReader("AAAAK").is_3_of_a_kind()
     assert not HandReader("AAAAA").is_3_of_a_kind()
     assert not HandReader("KAKAQ").is_3_of_a_kind()
-    assert HandReader("KAK1K").is_3_of_a_kind()
+    assert HandReader("KAKQK").is_3_of_a_kind()
     assert HandReader("AKKK3").is_3_of_a_kind()
     assert HandReader("T55J5").is_3_of_a_kind()
     assert HandReader("QQQJA").is_3_of_a_kind()
@@ -119,6 +128,8 @@ def tests():
     assert HandReader("AAKQJ").is_one_pair()
     assert not HandReader("AAKKQ").is_one_pair()
 
+    assert HandReader("32T3K").is_one_pair()
+
     assert HandReader("AKQJ9").is_high_card()
 
     assert total_winnings(read_lines("day_7_1_test_input.txt")) == 6440
@@ -126,6 +137,8 @@ def tests():
     assert HandReader("A8624") > HandReader("9TJ67")
     assert HandReader("9TJ67") < HandReader("A8624")
     assert HandReader("7227Q") > HandReader("67Q64")
+
+    assert HandReader("23K8Q").is_high_card()
 
 
 def main():
