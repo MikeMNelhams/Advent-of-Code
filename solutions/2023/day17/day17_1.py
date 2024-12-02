@@ -4,10 +4,6 @@ from handy_dandy_library.string_manipulations import pad_with_horizontal_rules, 
 
 from queue import PriorityQueue
 
-import cProfile
-import re
-
-
 type Grid = list[list[int]]
 
 
@@ -231,8 +227,6 @@ def tests2():
 
 
 def tests3():
-    # Profiling (493 answer)
-    # cProfile.run("re.compile(LavaGrid.from_lines(read_lines(\"day_17_1_test_input2.txt\")).minimal_route_heat_loss())")
     lava_grid = LavaGrid.from_lines(read_lines("day_17_1_test_input2.txt"))
     e, path = lava_grid.minimal_route_heat_loss()
     for p in path:
