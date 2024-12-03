@@ -19,7 +19,7 @@ def number_of_safe_levels(lines: str) -> int:
 
 
 def tests():
-    t1 = number_of_safe_levels(read_lines("puzzle1_test_input1.txt"))
+    t1 = number_of_safe_levels(read_lines("puzzle2_test_input1.txt"))
     print(t1)
     assert t1 == 4
 
@@ -27,7 +27,7 @@ def tests():
     assert is_safe_with_cut_brute_force(levels=[1, 2, 5, 8, 9, 13])
     assert not is_safe_with_cut_brute_force(levels=[1, 3, 1, 1, 4, 5])
 
-    t2 = number_of_safe_levels(read_lines("puzzle1_1.txt"))
+    t2 = number_of_safe_levels(read_lines("puzzle2_1.txt"))
     print(t2)
 
 

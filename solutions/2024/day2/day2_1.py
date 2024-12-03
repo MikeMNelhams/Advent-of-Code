@@ -32,10 +32,10 @@ def number_of_safe_levels(lines: str) -> int:
 
 
 def tests():
-    t1 = number_of_safe_levels(read_lines("puzzle1_test_input1.txt"))
+    t1 = number_of_safe_levels(read_lines("puzzle2_test_input1.txt"))
     assert t1 == 2
 
-    t2 = number_of_safe_levels(read_lines("puzzle1_1.txt"))
+    t2 = number_of_safe_levels(read_lines("puzzle2_1.txt"))
     print(t2)
 
 
