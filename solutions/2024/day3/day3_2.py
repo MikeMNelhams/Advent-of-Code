@@ -1,4 +1,5 @@
 from handy_dandy_library.file_processing import read_lines
+from handy_dandy_library.string_manipulations import are_equal
 from day3_1 import total_product_from_lines
 
 
@@ -13,15 +14,15 @@ def total_allowed_product_from_line(line: str) -> int:
 
     i = 0
     while i < m - 8:
-        if is_match(line[i:i+7], "don't()"):
+        if are_equal(line[i:i + 7], "don't()"):
             allow_multiplication = False
             i += 7
             continue
-        if is_match(line[i:i+4], "do()"):
+        if are_equal(line[i:i + 4], "do()"):
             allow_multiplication = True
             i += 4
             continue
-        if allow_multiplication and is_match(line[i:i+4], "mul("):
+        if allow_multiplication and are_equal(line[i:i + 4], "mul("):
             i += 4
             valid_multiplication = True
             a_string = ""
@@ -61,13 +62,6 @@ def total_allowed_product_from_line(line: str) -> int:
         i += 1
 
     return total
-
-
-def is_match(phrase: str, target: str) -> bool:
-    if len(phrase) < len(target):
-        raise ZeroDivisionError
-
-    return all(char_p == char_t for char_p, char_t in zip(phrase, target))
 
 
 def total_allowed_product_from_lines(lines: list[str]) -> int:

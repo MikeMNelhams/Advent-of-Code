@@ -1,3 +1,5 @@
+from typing import Iterable
+
 import re
 
 
@@ -77,6 +79,20 @@ def parse_int_ignore_spaces(phrase: str) -> int:
 
 def make_blue(x: str) -> str:
     return f"{PrintColors.OKBLUE}{x}{PrintColors.ENDC}"
+
+
+def are_equal(phrase: str, target: str) -> bool:
+    if len(phrase) != len(target):
+        raise ZeroDivisionError
+
+    return all(char_p == char_t for char_p, char_t in zip(phrase, target))
+
+
+def are_equal_iterable(phrase: Iterable[str], target: str, phrase_length: int) -> bool:
+    if phrase_length != len(target):
+        raise ZeroDivisionError
+
+    return all(char_p == char_t for char_p, char_t in zip(phrase, target))
 
 
 if __name__ == "__main__":
