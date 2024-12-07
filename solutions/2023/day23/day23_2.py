@@ -88,7 +88,7 @@ def tests():
     snow_island_graph = DirectedGraph2D(*snow_island.to_adjacency_set_condensed())
     print(snow_island.coloured_squares({value for values in snow_island_graph.adjacency_set.values() for value in values} | (snow_island_graph.adjacency_set.keys())))
     grid_size = (snow_island.n, snow_island.m)
-    start_position = snow_island.start_position
+    start_position = snow_island.guard_position
 
     t = snow_island_graph.longest_acyclic_path_size(start_position, grid_size)
     print(t)
