@@ -1,4 +1,9 @@
+from typing import Callable
+
 from handy_dandy_library.file_processing import read_lines
+
+
+BivariateOperator = Callable[[int, int], int]
 
 
 class Calibrator:
@@ -6,10 +11,12 @@ class Calibrator:
         self.operation_challenges = tuple(OperationChallenge(line) for line in lines)
 
     def possible_challenges_sum(self) -> list[int]:
-        return sum(challenge.target for challenge in self.operation_challenges if challenge.is_possible())
+        operators = [lambda x, y: x + y, lambda x, y: x * y]
+        return sum(challenge.target for challenge in self.operation_challenges if challenge.is_possible(operators))
 
     def possible_challenges_sum2(self) -> list[int]:
-        return sum(challenge.target for challenge in self.operation_challenges if challenge.is_possible2())
+        operators = [lambda x, y: x + y, lambda x, y: x * y, lambda x, y: int(str(x) + str(y))]
+        return sum(challenge.target for challenge in self.operation_challenges if challenge.is_possible(operators))
 
 
 class OperationChallenge:
@@ -23,7 +30,7 @@ class OperationChallenge:
     def __repr__(self) -> str:
         return f"{self.target}: [{self.integers}]"
 
-    def is_possible(self) -> bool:
+    def is_possible(self, operators: list[BivariateOperator]) -> bool:
         to_check = [(self.integers[0], 1)]
         while to_check:
             a, i = to_check.pop()
@@ -38,29 +45,8 @@ class OperationChallenge:
 
             b = self.integers[i]
 
-            to_check.append((a + b, i + 1))
-            to_check.append((a * b, i + 1))
-
-        return False
-
-    def is_possible2(self) -> bool:
-        to_check = [(self.integers[0], 1)]
-        while to_check:
-            a, i = to_check.pop()
-
-            if a > self.target:
-                continue
-
-            if i == self.n:
-                if a == self.target:
-                    return True
-                continue
-
-            b = self.integers[i]
-
-            to_check.append((a + b, i + 1))
-            to_check.append((a * b, i + 1))
-            to_check.append((int(str(a) + str(b)), i + 1))
+            for operator in operators:
+                to_check.append((operator(a, b), i + 1))
 
         return False
 
