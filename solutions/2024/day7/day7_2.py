@@ -6,7 +6,9 @@ from day7_1 import Calibrator
 def tests():
     calibrator = Calibrator(read_lines("puzzle7_1_test_input1.txt"))
 
-    assert calibrator.possible_challenges_sum2() == 11387
+    assert calibrator.operation_challenges[3].is_possible2()
+
+    assert calibrator.possible_challenges_sum3() == 11387
 
 
 def main():
@@ -14,7 +16,7 @@ def main():
 
     calibrator = Calibrator(read_lines("puzzle7_1.txt"))
 
-    t2 = calibrator.possible_challenges_sum2()
+    t2 = calibrator.possible_challenges_sum3()
     assert t2 == 424977609625985
 
 

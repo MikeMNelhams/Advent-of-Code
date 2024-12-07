@@ -18,6 +18,9 @@ class Calibrator:
         operators = [lambda x, y: x + y, lambda x, y: x * y, lambda x, y: int(str(x) + str(y))]
         return sum(challenge.target for challenge in self.operation_challenges if challenge.is_possible(operators))
 
+    def possible_challenges_sum3(self) -> list[int]:
+        return sum(challenge.target for challenge in self.operation_challenges if challenge.is_possible2())
+
 
 class OperationChallenge:
     def __init__(self, line: str):
@@ -47,6 +50,39 @@ class OperationChallenge:
 
             for operator in operators:
                 to_check.append((operator(a, b), i + 1))
+
+        return False
+
+    def is_possible2(self) -> bool:
+        to_check = [(self.target, self.n - 1)]
+        while to_check:
+            a, i = to_check.pop()
+
+            if i == 0:
+                if a == self.integers[0]:
+                    return True
+                continue
+
+            b = self.integers[i]
+            a_str = str(a)
+            b_str = str(b)
+            k_a = len(a_str)
+            k_b = len(b_str)
+            concat_match = True
+            for char_a, char_b in zip(reversed(a_str), reversed(b_str)):
+                if char_a != char_b:
+                    concat_match = False
+
+            if concat_match and k_a > k_b:
+                to_check.append((int(a_str[:-k_b]), i - 1))
+
+            r = a % b
+            if r == 0:
+                to_check.append((a // b, i-1))
+
+            d = a - b
+            if d >= 0:
+                to_check.append((d, i-1))
 
         return False
 
