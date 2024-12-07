@@ -3,6 +3,9 @@ from handy_dandy_library.linear_algebra import Vector2D
 from handy_dandy_library.string_manipulations import pad_with_horizontal_rules
 
 
+from collections import defaultdict
+
+
 class GuardPredictor:
     guard_states = {'^': Vector2D((0, 1)), '>': Vector2D((1, 0)),
                     'v': Vector2D((0, -1)), '<': Vector2D((-1, 0))}
@@ -10,18 +13,26 @@ class GuardPredictor:
                                   Vector2D((0, -1)): 'v', Vector2D((-1, 0)): '<'}
     direction_encodings = {Vector2D((0, 1)): 0, Vector2D((1, 0)): 1,
                            Vector2D((0, -1)): 2, Vector2D((-1, 0)): 3}
+    movements_from_direction = {Vector2D((0, 1)): Vector2D((-1, 0)), Vector2D((1, 0)): Vector2D((0, 1)),
+                                Vector2D((0, -1)): Vector2D((1, 0)), Vector2D((-1, 0)): Vector2D((0, -1))}
 
     def __init__(self, lines: list[str]):
         self.n = len(lines)
         self.m = len(lines[0])
         self.__lines = lines
-        self.start_position, self.start_direction = self.__start_info_from_lines(lines)
-        self.guard_position, self.guard_direction = self.start_position, self.start_direction
+        start_info = self.__start_info_from_lines(lines)
+        self.start_position: Vector2D = start_info[0]
+        self.start_direction: Vector2D = start_info[1]
+        self.guard_position = self.start_position
+        self.guard_direction = self.start_direction
         obstacles = self.__obstacles_from_lines(lines)
-        self.obstacles_by_row = self.__obstacles_by_row(obstacles)
-        self.obstacles_by_column = self.__obstacles_by_column(obstacles)
+        self.obstacles = set(obstacles)
 
         self.cells_covered = [[0 for _ in range(self.m)] for _ in range(self.n)]
+
+        self._directions = tuple(self.direction_encodings.keys())
+        self.jump_table = {}
+        self._prev_jump_spot = self.start_position
 
     def __repr__(self) -> str:
         lines = [''.join(char if char not in self.guard_states else '.' for char in line) for line in self.__lines]
@@ -73,98 +84,102 @@ class GuardPredictor:
         return obstacles_by_column
 
     def cell_coverage(self) -> int:
-        for _ in range(100_000):
+        self.guard_position = self.start_position
+        self.guard_direction = self.start_direction
+
+        for _ in range(10_000):
             x, y = self.guard_position.x, self.guard_position.y
             self.cells_covered[x][y] = 1
-            self.progress_guard()
+
+            self.progress_guard(True)
             if not (0 <= self.guard_position.x < self.n) or not (0 <= self.guard_position.y < self.n):
                 return sum(1 if x > 0 else 0 for row in self.cells_covered for x in row)
 
+        raise RuntimeError
+
+    def turn_right(self) -> None:
+        next_direction = (self.direction_encodings[self.guard_direction] + 1) % 4
+        self.guard_direction = self._directions[next_direction]
+        return None
+
+    def progress_guard(self, is_recording_jump_table: bool = False, new_obstacle: Vector2D = None) -> None:
+        key = (self.guard_position, self.guard_direction)
+
+        use_jump_table = new_obstacle is None or (self.guard_position.x != new_obstacle.x and self.guard_position.y != new_obstacle.y)
+        if use_jump_table and key in self.jump_table:
+            steps = self.jump_table[key]
+            self.guard_position += self.movements_from_direction[self.guard_direction] * steps
+            self.turn_right()
+        else:
+            previous_position = self.guard_position
+
+            self.guard_position += self.movements_from_direction[self.guard_direction]
+
+            if self.guard_position in self.obstacles:
+                if is_recording_jump_table:
+                    self.jump_table[(self._prev_jump_spot, self.guard_direction)] = previous_position.manhattan_distance(self._prev_jump_spot)
+
+                self.turn_right()
+                self.guard_position = previous_position
+                if is_recording_jump_table:
+                    self._prev_jump_spot = self.guard_position
+        return None
+
+    def unique_obstacles_that_create_loop_count(self) -> int:
+        total = 0
+
+        self.cell_coverage()
+
+        self.guard_position = self.start_position
+        self.guard_direction = self.start_direction
+        obstacles_checked = 0
+
+        positions_checked = {self.start_position}
+
+        for _ in range(10_000):
+            previous_position = self.guard_position
+            previous_direction = self.guard_direction
+            self.progress_guard(new_obstacle=self.guard_position)
+            if not (0 <= self.guard_position.x < self.n) or not (0 <= self.guard_position.y < self.n):
+                return total
+
+            if self.guard_position in positions_checked:
+                continue
+
+            obstacles_checked += 1
+            positions_checked.add(self.guard_position)
+
+            obstacle = self.guard_position
+            branch_direction = self.guard_direction
+
+            self.guard_position = previous_position
+            self.guard_direction = previous_direction
+
+            if self.does_guard_loop(obstacle):
+                total += 1
+
+            self.guard_position = obstacle
+            self.guard_direction = branch_direction
+
         raise ZeroDivisionError
 
-    def progress_guard(self) -> None:
-        if self.guard_direction == self.guard_states['^']:
-            self.progress_guard_up()
-            return None
+    def does_guard_loop(self, obstacle: Vector2D) -> bool:
+        self.obstacles.add(obstacle)
 
-        if self.guard_direction == self.guard_states['>']:
-            self.progress_guard_right()
-            return None
+        directions_covered = defaultdict(set)
 
-        if self.guard_direction == self.guard_states['v']:
-            self.progress_guard_down()
-            return None
-
-        if self.guard_direction == self.guard_states['<']:
-            self.progress_guard_left()
-            return None
-
-    def progress_guard_up(self) -> None:
-        self.guard_position += Vector2D((-1, 0))
-        if self.guard_position.x in self.obstacles_by_row[self.guard_position.y]:
-            self.guard_direction = self.guard_states['>']
-            self.guard_position -= Vector2D((-1, 0))
-        return None
-
-    def progress_guard_right(self) -> None:
-        self.guard_position += Vector2D((0, 1))
-        if self.guard_position.y in self.obstacles_by_column[self.guard_position.x]:
-            self.guard_direction = self.guard_states['v']
-            self.guard_position -= Vector2D((0, 1))
-        return None
-
-    def progress_guard_down(self) -> None:
-        self.guard_position += Vector2D((1, 0))
-        if self.guard_position.x in self.obstacles_by_row[self.guard_position.y]:
-            self.guard_direction = self.guard_states['<']
-            self.guard_position -= Vector2D((1, 0))
-        return None
-
-    def progress_guard_left(self) -> None:
-        self.guard_position += Vector2D((0, -1))
-        if self.guard_position.y in self.obstacles_by_column[self.guard_position.x]:
-            self.guard_direction = self.guard_states['^']
-            self.guard_position -= Vector2D((0, -1))
-        return None
-
-    def unique_obstacles_that_create_loop_count_brute_force(self) -> int:
-        self.cell_coverage()
-        total = 0
-        number_of_cells_checked = 0
-        for i in range(self.n):
-            for j in range(self.m):
-                if self.cells_covered[i][j] != 1:
-                    continue
-                if Vector2D((i, j)) == self.start_position:
-                    continue
-                print(f"Number of cells checked: {number_of_cells_checked}")
-                number_of_cells_checked += 1
-                obstacle = Vector2D((i, j))
-                self.obstacles_by_row[obstacle.y].add(obstacle.x)
-                self.obstacles_by_column[obstacle.x].add(obstacle.y)
-                self.guard_position = self.start_position
-                self.guard_direction = self.start_direction
-
-                new_cells_covered = [[0 for _ in range(self.m)] for _ in range(self.n)]
-                directions_covered = [[set() for _ in range(self.m)] for _ in range(self.n)]
-
-                for _ in range(10_000):
-                    x, y = self.guard_position.x, self.guard_position.y
-                    new_cells_covered[x][y] = 1
-                    directions_covered[x][y].add(self.direction_encodings[self.guard_direction])
-                    self.progress_guard()
-                    x, y = self.guard_position.x, self.guard_position.y
-                    if not (0 <= self.guard_position.x < self.n) or not (0 <= self.guard_position.y < self.n):
-                        self.obstacles_by_row[obstacle.y].remove(obstacle.x)
-                        self.obstacles_by_column[obstacle.x].remove(obstacle.y)
-                        break
-                    cell_repeated = new_cells_covered[x][y] == 1
-                    if cell_repeated and self.direction_encodings[self.guard_direction] in directions_covered[x][y]:
-                        self.obstacles_by_row[obstacle.y].remove(obstacle.x)
-                        self.obstacles_by_column[obstacle.x].remove(obstacle.y)
-                        total += 1
-                        break
-        return total
+        for _ in range(10_000):
+            self.progress_guard(new_obstacle=obstacle)
+            if not (0 <= self.guard_position.x < self.n) or not (0 <= self.guard_position.y < self.n):
+                self.obstacles.remove(obstacle)
+                return False
+            guard_direction_encoding = self.direction_encodings[self.guard_direction]
+            direction_repeated = guard_direction_encoding in directions_covered[self.guard_position]
+            if direction_repeated:
+                self.obstacles.remove(obstacle)
+                return True
+            directions_covered[self.guard_position].add(guard_direction_encoding)
+        raise RuntimeError
 
 
 def tests():
@@ -181,7 +196,6 @@ def main():
     t2 = guard_predictor.cell_coverage()
     assert t2 == 5564
 
-    guard_predictor.print_recent_movement()
 
 if __name__ == "__main__":
     main()
