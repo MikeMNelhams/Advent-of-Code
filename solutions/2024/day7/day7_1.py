@@ -8,6 +8,9 @@ class Calibrator:
     def possible_challenges_sum(self) -> list[int]:
         return sum(challenge.target for challenge in self.operation_challenges if challenge.is_possible())
 
+    def possible_challenges_sum2(self) -> list[int]:
+        return sum(challenge.target for challenge in self.operation_challenges if challenge.is_possible2())
+
 
 class OperationChallenge:
     def __init__(self, line: str):
@@ -37,6 +40,27 @@ class OperationChallenge:
 
             to_check.append((a + b, i + 1))
             to_check.append((a * b, i + 1))
+
+        return False
+
+    def is_possible2(self) -> bool:
+        to_check = [(self.integers[0], 1)]
+        while to_check:
+            a, i = to_check.pop()
+
+            if a > self.target:
+                continue
+
+            if i == self.n:
+                if a == self.target:
+                    return True
+                continue
+
+            b = self.integers[i]
+
+            to_check.append((a + b, i + 1))
+            to_check.append((a * b, i + 1))
+            to_check.append((int(str(a) + str(b)), i + 1))
 
         return False
 
