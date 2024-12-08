@@ -42,6 +42,9 @@ class Vector2D(UnitVector2D):
     def __mul__(self, other: float) -> Vector2D:
         return Vector2D((self.x * other, self.y * other))
 
+    def __floordiv__(self, other: int) -> Vector2D:
+        return Vector2D((self.x // other, self.y // other))
+
     def __rmul__(self, other: float) -> Vector2D:
         return self.__mul__(other)
 

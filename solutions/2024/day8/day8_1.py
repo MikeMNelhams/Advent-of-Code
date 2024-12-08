@@ -22,6 +22,9 @@ class AntennaTracker:
                 antennas[char].add(Vector2D((i, j)))
         return antennas
 
+    def is_within_bounds(self, coordinate: Vector2D) -> bool:
+        return (0 <= coordinate.x < self.n) and (0 <= coordinate.y < self.m)
+
     @property
     def unique_antinodes_count(self) -> int:
         locations = set()
@@ -38,8 +41,38 @@ class AntennaTracker:
 
         return len(locations)
 
-    def is_within_bounds(self, coordinate: Vector2D) -> bool:
-        return (0 <= coordinate.x < self.n) and (0 <= coordinate.y < self.m)
+    @property
+    def unique_t_antinodes_count(self) -> int:
+        locations = set()
+
+        for _, coordinates in self.antennas.items():
+            for a, b in combinations(coordinates, 2):
+                displacement: Vector2D = b - a
+
+                y_abs = abs(displacement.y)
+                x_abs = abs(displacement.x)
+
+                if y_abs >= x_abs and y_abs % x_abs == 0:
+                    displacement //= x_abs
+
+                elif x_abs > y_abs and x_abs % y_abs == 0:
+                    displacement //= y_abs
+
+                hit_wall = False
+                p = Vector2D((a.x, a.y))
+                while not hit_wall:
+                    locations.add(p)
+                    p -= displacement
+                    hit_wall = not self.is_within_bounds(p)
+
+                hit_wall = False
+                p = Vector2D((a.x, a.y)) + displacement
+                while not hit_wall:
+                    locations.add(p)
+                    p += displacement
+                    hit_wall = not self.is_within_bounds(p)
+
+        return len(locations)
 
 
 def tests():
