@@ -4,7 +4,6 @@ from handy_dandy_library.file_processing import read_lines
 class FileCompactor:
     def __init__(self, line: str):
         self.n = len(line[0])
-        print(line)
         self.contiguous_file = self.__contiguous_file(line[0])
 
     def __contiguous_file(self, line: str) -> list[int]:
@@ -47,51 +46,58 @@ class FileCompactor:
         return sum(i * x for i, x in enumerate(compacted_files))
 
     def compacted_file_checksum2(self) -> int:
-        contiguous_file = [x for x in self.contiguous_file]
-        m = len(contiguous_file)
+        m = len(self.contiguous_file)
         gaps = []
-        file_blocks = []
+        file_blocks = [None for _ in range(self.n // 2 + 1)]
 
         i = 0
+        file_block_index = 0
         while i < m:
             file_block_size = 0
             file_block_start = i
-            while i < m and contiguous_file[i] != -1:
-                if file_block_size > 0 and contiguous_file[i] != contiguous_file[i - 1]:
-                    file_blocks.append((file_block_start, file_block_size))
+            while i < m and self.contiguous_file[i] != -1:
+                if file_block_size > 0 and self.contiguous_file[i] != self.contiguous_file[i - 1]:
+                    file_blocks[file_block_index] = (file_block_start, file_block_size)
+                    file_block_index += 1
                     file_block_size = 0
                     file_block_start = i
 
                 file_block_size += 1
                 i += 1
 
-            file_blocks.append((file_block_start, file_block_size))
+            file_blocks[file_block_index] = (file_block_start, file_block_size)
+            file_block_index += 1
 
             gap_size = 0
             gap_start = i
-            while i < m and contiguous_file[i] == -1:
+            while i < m and self.contiguous_file[i] == -1:
                 gap_size += 1
                 i += 1
             if gap_size > 0:
-                gaps.append((gap_start, gap_size))
+                gaps.append([gap_start, gap_size])
 
-        file_blocks.reverse()
+        return self.__contiguous_block_defragment_checksum(file_blocks, gaps)
 
-        for file_block_start, file_block_size in file_blocks:
-            file_id = contiguous_file[file_block_start]
+    def __contiguous_block_defragment_checksum(self, file_blocks, gaps):
+        return sum(self.__contiguous_block_weight(file_block_size, file_block_start, gaps) for file_block_start, file_block_size in reversed(file_blocks))
 
-            for gap_index, (gap_start, gap_size) in enumerate(gaps):
-                if gap_start >= file_block_start:
-                    break
+    def __contiguous_block_weight(self, file_block_size: int, file_block_start: int, gaps: list[list[int, int]]):
+        file_id = self.contiguous_file[file_block_start]
+        total = 0
+        moved = False
+        for gap_index, (gap_start, gap_size) in enumerate(gaps):
+            if gap_start >= file_block_start:
+                break
 
-                if file_block_size <= gap_size:
-                    for i in range(file_block_size):
-                        contiguous_file[gap_start + i] = file_id
-                        contiguous_file[file_block_start + i] = -1
-                    gaps[gap_index] = (gap_start + file_block_size, gap_size - file_block_size)
-                    break
-
-        return sum(i * x for i, x in enumerate(contiguous_file) if x != -1)
+            if file_block_size <= gap_size:
+                moved = True
+                total += gap_start * file_block_size * file_id
+                gaps[gap_index][0] = gap_start + file_block_size
+                gaps[gap_index][1] = gap_size - file_block_size
+                break
+        if not moved:
+            total += file_block_start * file_block_size * file_id
+        return total + ((file_block_size * (file_block_size - 1)) // 2) * file_id
 
 
 def tests():

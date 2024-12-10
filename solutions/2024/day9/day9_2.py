@@ -18,6 +18,7 @@ def main():
     file_compactor = FileCompactor(read_lines("puzzle9_1.txt"))
 
     t2 = file_compactor.compacted_file_checksum2()
+    print(t2)
     assert t2 == 6349492251099
 
     print(time.perf_counter() - t0)
