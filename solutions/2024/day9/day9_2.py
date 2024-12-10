@@ -9,6 +9,7 @@ def tests():
     file_compactor = FileCompactor(read_lines("puzzle9_1_test_input1.txt"))
 
     t1 = file_compactor.compacted_file_checksum2()
+    print(f"total: {t1}")
     assert t1 == 2858
 
 

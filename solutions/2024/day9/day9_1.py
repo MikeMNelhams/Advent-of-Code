@@ -1,6 +1,9 @@
 from handy_dandy_library.file_processing import read_lines
 
 
+from collections import deque
+
+
 class FileCompactor:
     def __init__(self, line: str):
         self.n = len(line[0])
@@ -46,27 +49,72 @@ class FileCompactor:
         return sum(i * x for i, x in enumerate(compacted_files))
 
     def compacted_file_checksum2(self) -> int:
+        gaps, file_blocks = self.__gaps_and_file_blocks()
+
+        total = 0
+        gap_index = 0
+        m = len(gaps)
+        while gap_index < m:
+            gap_start, gap_size = gaps[gap_index]
+
+            while gap_size > 0:
+                rightmost_index = -1
+                rightmost_size = -1
+                rightmost_file_id = -1
+
+                for file_block_size, file_block_list in enumerate(file_blocks[:gap_size + 1]):
+                    if not file_block_list:
+                        continue
+
+                    file_block_start, file_id = file_block_list[-1]
+
+                    if file_block_start <= gap_start or file_block_start <= rightmost_index:
+                        continue
+
+                    rightmost_index = file_block_start
+                    rightmost_size = file_block_size
+                    rightmost_file_id = file_id
+
+                if rightmost_size == -1:
+                    break
+
+                total += (gap_start * rightmost_size + ((rightmost_size * (rightmost_size - 1)) // 2)) * rightmost_file_id
+                gap_start += rightmost_size
+                gap_size -= rightmost_size
+                file_blocks[rightmost_size].pop()
+
+            gap_index += 1
+
+        for file_block_size, file_block_list in enumerate(file_blocks):
+            if not file_block_list:
+                continue
+
+            total += sum((file_block_start * file_block_size + ((file_block_size * (file_block_size - 1)) // 2)) * file_id
+                         for file_block_start, file_id in file_block_list)
+
+        return total
+
+    def __gaps_and_file_blocks(self) -> (list[tuple[int, int]], list[list[int, int]]):
         m = len(self.contiguous_file)
         gaps = []
-        file_blocks = [None for _ in range(self.n // 2 + 1)]
-
+        file_blocks = [[] for _ in range(10)]
         i = 0
-        file_block_index = 0
+        file_id = 0
         while i < m:
             file_block_size = 0
             file_block_start = i
             while i < m and self.contiguous_file[i] != -1:
                 if file_block_size > 0 and self.contiguous_file[i] != self.contiguous_file[i - 1]:
-                    file_blocks[file_block_index] = (file_block_start, file_block_size)
-                    file_block_index += 1
+                    file_blocks[file_block_size].append((file_block_start, file_id))
+                    file_id += 1
                     file_block_size = 0
                     file_block_start = i
 
                 file_block_size += 1
                 i += 1
 
-            file_blocks[file_block_index] = (file_block_start, file_block_size)
-            file_block_index += 1
+            file_blocks[file_block_size].append((file_block_start, file_id))
+            file_id += 1
 
             gap_size = 0
             gap_start = i
@@ -74,30 +122,8 @@ class FileCompactor:
                 gap_size += 1
                 i += 1
             if gap_size > 0:
-                gaps.append([gap_start, gap_size])
-
-        return self.__contiguous_block_defragment_checksum(file_blocks, gaps)
-
-    def __contiguous_block_defragment_checksum(self, file_blocks, gaps):
-        return sum(self.__contiguous_block_weight(file_block_size, file_block_start, gaps) for file_block_start, file_block_size in reversed(file_blocks))
-
-    def __contiguous_block_weight(self, file_block_size: int, file_block_start: int, gaps: list[list[int, int]]):
-        file_id = self.contiguous_file[file_block_start]
-        total = 0
-        moved = False
-        for gap_index, (gap_start, gap_size) in enumerate(gaps):
-            if gap_start >= file_block_start:
-                break
-
-            if file_block_size <= gap_size:
-                moved = True
-                total += gap_start * file_block_size * file_id
-                gaps[gap_index][0] = gap_start + file_block_size
-                gaps[gap_index][1] = gap_size - file_block_size
-                break
-        if not moved:
-            total += file_block_start * file_block_size * file_id
-        return total + ((file_block_size * (file_block_size - 1)) // 2) * file_id
+                gaps.append((gap_start, gap_size))
+        return gaps, file_blocks
 
 
 def tests():
