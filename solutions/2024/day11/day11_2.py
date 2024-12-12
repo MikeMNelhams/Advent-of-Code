@@ -1,5 +1,3 @@
-import time
-
 from handy_dandy_library.file_processing import read_lines
 
 from day11_1 import EngravedStones
@@ -17,7 +15,7 @@ def main():
     engraved_stones = EngravedStones(read_lines("puzzle11_1.txt"))
 
     t2 = engraved_stones.count_after_blinks(75)
-    print(t2)
+    assert t2 == 225404711855335
 
 
 if __name__ == "__main__":
