@@ -16,7 +16,10 @@ class UnitVector2D:
         return self.x == other.x and self.y == other.y
 
     def __repr__(self) -> str:
-        return f"({self.x},{self.y})"
+        return f"({str(self)})"
+
+    def __str__(self) -> str:
+        return f"{self.x},{self.y}"
 
     @property
     def direction_name(self) -> str:
