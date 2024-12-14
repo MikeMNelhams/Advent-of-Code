@@ -54,6 +54,9 @@ class Vector2D(UnitVector2D):
     def __mod__(self, other: int) -> Vector2D:
         return Vector2D((self.x % other, self.y % other))
 
+    def mod_vector(self, other: Vector2D) -> Vector2D:
+        return Vector2D((self.x % other.x, self.y % other.y))
+
     def manhattan_distance(self, other: Vector2D) -> float:
         return abs(self.x - other.x) + abs(self.y - other.y)
 
