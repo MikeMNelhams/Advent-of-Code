@@ -16,10 +16,10 @@ class UnitVector2D:
         return self.x == other.x and self.y == other.y
 
     def __repr__(self) -> str:
-        return f"({str(self)})"
+        return str(self)
 
     def __str__(self) -> str:
-        return f"{self.x},{self.y}"
+        return f"({self.x},{self.y})"
 
     @property
     def direction_name(self) -> str:
@@ -63,6 +63,9 @@ class Vector2D(UnitVector2D):
     @classmethod
     def zero(cls):
         return cls((0, 0))
+
+    def round_to_int_vector(self) -> Vector2D:
+        return Vector2D((int(round(self.x)), int(round(self.y))))
 
 
 class Vector3D:
@@ -139,6 +142,56 @@ class Vector3D:
 
     def triple_product(self, other: Vector3D, other2: Vector3D) -> float:
         return self.dot(other.cross(other2))
+
+
+class Matrix2x2:
+    def __init__(self, a: int, b: int, c: int, d: int):
+        self.a = a
+        self.b = b
+        self.c = c
+        self.d = d
+
+    def __repr__(self) -> str:
+        return f"Matrix2x2[{self.a}, {self.b}, {self.c}, {self.d}]"
+
+    def __rmul__(self, other):
+        if isinstance(other, float) or isinstance(other, int):
+            return self.multiply_number(other)
+
+        raise NotImplementedError
+
+    def __mul__(self, other):
+        if isinstance(other, float) or isinstance(other, int):
+            return self.multiply_number(other)
+
+        if isinstance(other, Vector2D) :
+            return self.multiply_vector(other)
+
+        raise NotImplementedError
+
+    def multiply_number(self, x: float) -> Matrix2x2:
+        return Matrix2x2(self.a * x, self.b * x, self.c * x, self.d * x)
+
+    def multiply_vector(self, v: Vector2D) -> Matrix2x2:
+        return Vector2D((self.a * v.x + self.b * v.y, self.c * v.x + self.d * v.y))
+
+    def has_inverse(self) -> bool:
+        return self.det_reciprocal != 0
+
+    @property
+    def det(self) -> float:
+        # Assumes that the det exists!
+        return 1.0 / self.det_reciprocal
+
+    @property
+    def det_reciprocal(self) -> int:
+        return self.a * self.d - self.b * self.c
+
+    def adjoint(self) -> Matrix2x2:
+        return Matrix2x2(self.d, -self.b, -self.c, self.a)
+
+    def inverse(self) -> Matrix2x2:
+        return self.det * self.adjoint()
 
 
 def polygon_area(polygon: list[Vector2D]) -> float:
