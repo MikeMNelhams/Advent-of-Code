@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 from handy_dandy_library.list_operations import consecutive_pairs
 
 
@@ -62,6 +64,19 @@ class Vector2D(UnitVector2D):
 
     def cross_product(self, other: Vector2D) -> float:
         return self.x * other.y - other.x * self.y
+
+    def dot_product(self, other: Vector2D) -> float:
+        return self.x * other.x + self.y * other.y
+
+    def angle_to(self, other: Vector2D) -> float:
+        denominator = (self.magnitude_euclidean * other.magnitude_euclidean)
+        if denominator == 0:
+            raise ZeroDivisionError
+        return math.acos(self.dot_product(other) / denominator) * (180 / math.pi)
+
+    @property
+    def magnitude_euclidean(self) -> float:
+        return math.sqrt(self.x ** 2 + self.y ** 2)
 
     @classmethod
     def zero(cls):
