@@ -62,6 +62,7 @@ class PageSorter:
         compare_key = cmp_to_key(self.__compare)
 
         for u in not_sorted_updates:
+            print(u)
             u.sort(key=compare_key)
         return sum(self.middle_integer(u) for u in not_sorted_updates)
 
