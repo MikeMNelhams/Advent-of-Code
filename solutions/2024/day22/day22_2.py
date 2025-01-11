@@ -58,7 +58,7 @@ class BananaMaximiser:
 
     @staticmethod
     def __is_valid_sequence(sequence: tuple[int]) -> bool:
-        # Reduce the search space. The following are either impossible or provable never optimal.
+        # Reduce the search space. The following are either impossible or provable sub-optimal.
         a, b, c, d = sequence[0], sequence[1], sequence[2], sequence[3]
         s1 = a + b
         s2 = c + d

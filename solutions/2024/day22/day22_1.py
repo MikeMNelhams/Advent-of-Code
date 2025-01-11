@@ -2,9 +2,9 @@ from handy_dandy_library.file_processing import read_lines
 
 
 def evolve_secret(secret: int) -> int:
-    secret = prune_secret(mix_secret(secret, secret * 64))
-    secret = prune_secret(mix_secret(secret, secret // 32))
-    secret = prune_secret(mix_secret(secret, secret * 2048))
+    secret = prune_mix(secret, secret << 6)
+    secret = prune_mix(secret, secret >> 5)
+    secret = prune_mix(secret, secret << 11)
     return secret
 
 
@@ -14,6 +14,10 @@ def mix_secret(secret: int, mix: int) -> int:
 
 def prune_secret(secret: int) -> int:
     return secret & 16777215
+
+
+def prune_mix(secret: int, mix: int) -> int:
+    return (secret ^ mix) & 16777215
 
 
 def evolve_secret_repeat(secret: int, number_of_iterations: int) -> int:
