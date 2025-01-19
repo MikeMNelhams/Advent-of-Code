@@ -145,10 +145,27 @@ class ChronospatialComputer:
         self.c = self.__adv(operand)
         return None
 
-    def determine_tauto_a(self, min_attempt: int=0, max_attempt: int = 1_000_000) -> int:
-        program_length = len(self.program)
+    def determine_tauto_a(self) -> int:
+        n = len(self.program)
 
-        raise ValueError(f"Not within the first {max_attempt}")
+        def run_program(a_trial):
+            self.a = a_trial
+
+            while self.instruction_index < n:
+                self.step()
+
+            outs = [x for x in self.outs]
+            self.reset()
+            return outs
+
+        a_test = 0
+        for i in reversed(range(n)):
+            a_test <<= 3
+            while run_program(a_test) != self.program[i:]:
+                a_test += 1
+
+        return a_test
+
 
 
 def tests():
