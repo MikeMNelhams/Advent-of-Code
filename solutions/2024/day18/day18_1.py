@@ -31,10 +31,10 @@ class FallingByteGrid:
         self.g_scores = defaultdict(lambda: self.INF)
         self.h_scores = {Vector2D((i, j)): self.end.manhattan_distance(Vector2D((i, j))) for j in range(self.width) for i in range(self.height)}
 
-    def print_path(self, path: list[Vector2D]) -> None:
+    def print_path(self, path: list[Vector2D], fallen_bytes: set[Vector2D]) -> None:
         grid = [['.' for _ in range(self.height)] for _ in range(self.width)]
 
-        for fallen_byte in self.fallen_bytes:
+        for fallen_byte in fallen_bytes:
             grid[fallen_byte.y][fallen_byte.x] = '#'
 
         for coordinate in path:
@@ -49,20 +49,21 @@ class FallingByteGrid:
         return [Vector2D((x[0], x[1])) for x in falling_bytes]
 
     def minimum_steps(self, number_of_bytes: int) -> int:
-        self.fallen_bytes = self.fallen_bytes[:number_of_bytes]
+        if number_of_bytes == 0:
+            return self.width + self.height
+        self.g_scores = defaultdict(lambda: self.INF)
         self.fallen_bytes_set = set()
 
-        for coordinate in self.fallen_bytes:
+        for coordinate in self.fallen_bytes[:number_of_bytes]:
             self.fallen_bytes_set.add(coordinate)
             self.g_scores[coordinate] = -1
             self.h_scores[coordinate] = -1
 
         best_previous: CameFromDict = {self.start: (Vector2D((-1, -1)))}
 
-        self.__set_g_score(self.start, best_previous)
+        self.__set_g_score(self.start, 0)
 
         to_check = [State(self.h(self.start), self.start)]
-        to_check_set = {self.start}
 
         while to_check:
             state = heappop(to_check)
@@ -70,30 +71,40 @@ class FallingByteGrid:
             node = state.coordinate
             f_score = state.f
 
-            to_check_set.remove(node)
-
             if node == self.end:
-                path_back = self.reconstruct_path(best_previous, self.end)
-                self.print_path(path_back)
+                # path_back = self.reconstruct_path(best_previous, self.end)
+                # self.print_path(path_back, set(self.fallen_bytes[:number_of_bytes]))
 
-                return f_score + 1
+                return f_score
 
             neighbours = [neighbour for direction in self.directions
                           if (neighbour := node + direction) not in self.fallen_bytes_set and self.is_within_grid(neighbour)]
 
+            tentative_g_score = self.__get_g_score(node) + 1
+
             for neighbour in neighbours:
-                tentative_g_score = self.__get_g_score(node)
                 if tentative_g_score < self.__get_g_score(neighbour):
                     best_previous[neighbour] = node
-                    self.__set_g_score(neighbour, best_previous)
-                    neighbour_h_score = self.h(neighbour)
-                    f_score = tentative_g_score + neighbour_h_score
+                    self.__set_g_score(neighbour, tentative_g_score)
+                    f_score = tentative_g_score + self.h(neighbour)
 
-                    if neighbour not in to_check_set:
-                        heappush(to_check, State(f_score, neighbour))
-                        to_check_set.add(neighbour)
-
+                    heappush(to_check, State(f_score, neighbour))
         return -1
+
+    def binary_search_failure_byte(self) -> (int, Vector2D):
+        left = 0
+        right = len(self.fallen_bytes) - 1
+        middle = (left + right) // 2
+        while left < right:
+            middle = (left + right) // 2
+            middle_passes = self.minimum_steps(middle) != -1
+
+            if middle_passes:
+                left = middle + 1
+            else:
+                right = middle
+
+        return middle, self.fallen_bytes[middle]
 
     @staticmethod
     def reconstruct_path(best_previous: CameFromDict, coordinate: Vector2D) -> list[Vector2D]:
@@ -114,16 +125,10 @@ class FallingByteGrid:
     def __get_g_score(self, coordinate: Vector2D) -> int:
         return self.g_scores[coordinate]
 
-    def __set_g_score(self, coordinate: Vector2D, best_previous: CameFromDict) -> None:
+    def __set_g_score(self, coordinate: Vector2D, g_score: int) -> None:
         assert coordinate not in self.fallen_bytes_set, ValueError("cannot change the score of a wall!")
-        if coordinate == self.start:
-            self.g_scores[coordinate] = 0
-            return None
 
-        previous_coordinate = best_previous[coordinate]
-        previous_g_score = self.__get_g_score(previous_coordinate)
-
-        self.g_scores[coordinate] = previous_g_score + 1
+        self.g_scores[coordinate] = g_score
         return None
 
     def h(self, coordinate: Vector2D) -> int:
