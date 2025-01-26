@@ -20,6 +20,9 @@ class State:
     def __le__(self, other: Self) -> bool:
         return self.f <= other.f
 
+    def __repr__(self) -> str:
+        return f"State[{self.f}, {self.node}, {self.cuts}]"
+
 
 class Racetrack:
     INF = 10 ** 10
@@ -103,8 +106,8 @@ class Racetrack:
             state = heappop(to_check)
 
             if state.node == self.end:
-                path_back = self.reconstruct_path(best_previous, self.end)
-                self.print_path(path_back)
+                # path_back = self.reconstruct_path(best_previous, self.end)
+                # self.print_path(path_back)
                 return state.f
 
             neighbours = [(neighbour, self.is_wall(neighbour)) for direction in self.directions
@@ -124,18 +127,8 @@ class Racetrack:
 
         return -1
 
-    def shortest_two_consecutive_cut_path(self) -> int:
-        # Dijkstra without the 2-cut is (V+E)log(V)
-        # State: (f_score, node, cut_count)
-        # If cut_count is 0, consider the surrounding neighbours
-        #   that are also walls, but they set cut count = 1
-        # If cut_count is 1, consider the surrounding neighbours
-        #   all neighbours set cut count = 2
-        # If cut_count is 2, it's regular a* algo, blocked by walls
-
-        # Can be hugely optimised by excluding walls that are
-        #   directly pointing to the outside of the map with
-        #       no non-walls between them
+    def best_cheats_count(self, lower_limit: int) -> int:
+        maximum = self.shortest_path()
 
         g_scores = defaultdict(lambda: self.INF)
         best_previous = {(self.start, tuple()): (None, tuple())}
@@ -143,48 +136,48 @@ class Racetrack:
         g_scores[(self.start, tuple())] = 0
 
         to_check = [State(self.h[self.start], self.start, tuple())]
+        total = 0
 
         while to_check:
             state = heappop(to_check)
 
             if state.node == self.end:
-                path_back = self.reconstruct_path_with_cuts(best_previous, (self.end, state.cuts))
-                self.print_path(path_back)
-                return state.f
-
-            neighbours = [(neighbour, self.is_wall(neighbour)) for direction in self.directions
-                          if (neighbour := state.node + direction)
-                          and self.is_within_grid(neighbour)]
-
-            if len(state.cuts) == 2:
-                neighbours = [neighbour for neighbour in neighbours if not neighbour[1]]
+                # path_back = self.reconstruct_path_with_cuts(best_previous, (self.end, state.cuts))
+                # self.print_path(path_back)
+                print(f"remaining to check: {len(to_check)}")
+                total += 1
+                continue
 
             tentative_g_score = g_scores[(state.node, state.cuts)] + 1
-            for (neighbour, is_wall) in neighbours:
-                if len(state.cuts) == 2 and is_wall:
+            for direction in self.directions:
+                neighbour = state.node + direction
+                if not self.is_within_grid(neighbour):
+                    continue
+                if neighbour == best_previous[(state.node, state.cuts)][0]:
+                    continue
+
+                is_wall = self.is_wall(neighbour)
+
+                if len(state.cuts) == 1 and is_wall:
                     continue
 
                 neighbour_cuts = state.cuts
-                if is_wall or len(neighbour_cuts) == 1:
-                    neighbour_cuts = tuple(neighbour_cuts + (neighbour,))
+                if is_wall:
+                    neighbour_cuts = (neighbour,)
 
                 if tentative_g_score >= g_scores[(neighbour, neighbour_cuts)]:
                     continue
 
-                best_previous[(neighbour, neighbour_cuts)] = (state.node, state.cuts)
                 g_scores[(neighbour, neighbour_cuts)] = tentative_g_score
                 f_score = tentative_g_score + self.h[neighbour]
 
+                if maximum - state.f < lower_limit:
+                    continue
+
+                best_previous[(neighbour, neighbour_cuts)] = (state.node, state.cuts)
                 heappush(to_check, State(f_score, neighbour, neighbour_cuts))
 
-        return -1
-
-    def maximum_time_saved(self) -> int:
-        biggest = self.shortest_path()
-        print('-' * 50)
-        smallest = self.shortest_two_consecutive_cut_path()
-        print(f"small, big: ({smallest}, {biggest})")
-        return biggest - smallest
+        return total
 
     @staticmethod
     def __parse_lines(lines: list[str]) -> (Vector2D, Vector2D, set[Vector2D]):
@@ -210,13 +203,17 @@ class Racetrack:
 def tests():
     racetrack = Racetrack(read_lines("puzzle20_1_test_input1.txt"))
 
-    t1 = racetrack.maximum_time_saved()
-    print(t1)
-    assert t1 == 64
+    t1 = racetrack.best_cheats_count(64)
+    assert t1 == 1
 
 
 def main():
     tests()
+
+    racetrack = Racetrack(read_lines("puzzle20_1.txt"))
+
+    t1 = racetrack.best_cheats_count(100)
+    print(t1)
 
 
 if __name__ == "__main__":
