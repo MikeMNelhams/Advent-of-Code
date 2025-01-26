@@ -95,7 +95,7 @@ class Racetrack:
         print('\n'.join(''.join(row) for row in grid))
         return None
 
-    def shortest_path(self) -> int:
+    def shortest_path(self) -> (int, list[Vector2D]):
         g_scores = defaultdict(lambda: self.INF)
         best_previous = {self.start: None}
 
@@ -106,9 +106,9 @@ class Racetrack:
             state = heappop(to_check)
 
             if state.node == self.end:
-                # path_back = self.reconstruct_path(best_previous, self.end)
+                path_back = self.reconstruct_path(best_previous, self.end)
                 # self.print_path(path_back)
-                return state.f
+                return state.f, path_back
 
             neighbours = [(neighbour, self.is_wall(neighbour)) for direction in self.directions
                           if self.is_within_grid((neighbour := state.node + direction))
@@ -127,56 +127,40 @@ class Racetrack:
 
         return -1
 
-    def best_cheats_count(self, lower_limit: int) -> int:
-        maximum = self.shortest_path()
+    def best_cheats_count(self, cheat_amount: int, lower_limit: int) -> int:
+        maximum, best_path = self.shortest_path()
+        indices = {x: i for i, x in enumerate(best_path)}
 
-        g_scores = defaultdict(lambda: self.INF)
-        best_previous = {(self.start, tuple()): (None, tuple())}
+        def shortest_distance(a: Vector2D, b: Vector2D) -> int:
+            return indices[b] - indices[a]
 
-        g_scores[(self.start, tuple())] = 0
-
-        to_check = [State(self.h[self.start], self.start, tuple())]
         total = 0
+        width = self.m - 1
+        height = self.n - 1
+        n = len(best_path)
+        for i_n, node in enumerate(best_path[:-1]):
+            x_min = max(node.x - cheat_amount, 0)
+            x_max = min(node.x + cheat_amount, width)
+            y_min = max(node.y - cheat_amount, 0)
+            y_max = min(node.y + cheat_amount, height)
 
-        while to_check:
-            state = heappop(to_check)
+            for j in range(y_min, y_max + 1):
+                for i in range(x_min, x_max + 1):
+                    w = Vector2D((i, j))
 
-            if state.node == self.end:
-                # path_back = self.reconstruct_path_with_cuts(best_previous, (self.end, state.cuts))
-                # self.print_path(path_back)
-                print(f"remaining to check: {len(to_check)}")
-                total += 1
-                continue
+                    if w == node:
+                        continue
+                    if self.is_wall(w):
+                        continue
 
-            tentative_g_score = g_scores[(state.node, state.cuts)] + 1
-            for direction in self.directions:
-                neighbour = state.node + direction
-                if not self.is_within_grid(neighbour):
-                    continue
-                if neighbour == best_previous[(state.node, state.cuts)][0]:
-                    continue
+                    m = w.manhattan_distance(node)
+                    if m > cheat_amount:
+                        continue
 
-                is_wall = self.is_wall(neighbour)
-
-                if len(state.cuts) == 1 and is_wall:
-                    continue
-
-                neighbour_cuts = state.cuts
-                if is_wall:
-                    neighbour_cuts = (neighbour,)
-
-                if tentative_g_score >= g_scores[(neighbour, neighbour_cuts)]:
-                    continue
-
-                g_scores[(neighbour, neighbour_cuts)] = tentative_g_score
-                f_score = tentative_g_score + self.h[neighbour]
-
-                if maximum - state.f < lower_limit:
-                    continue
-
-                best_previous[(neighbour, neighbour_cuts)] = (state.node, state.cuts)
-                heappush(to_check, State(f_score, neighbour, neighbour_cuts))
-
+                    distance_saved = shortest_distance(node, w) - m
+                    if distance_saved >= lower_limit:
+                        total += 1
+        print(total)
         return total
 
     @staticmethod
@@ -203,7 +187,7 @@ class Racetrack:
 def tests():
     racetrack = Racetrack(read_lines("puzzle20_1_test_input1.txt"))
 
-    t1 = racetrack.best_cheats_count(64)
+    t1 = racetrack.best_cheats_count(2, 64)
     assert t1 == 1
 
 
@@ -212,8 +196,8 @@ def main():
 
     racetrack = Racetrack(read_lines("puzzle20_1.txt"))
 
-    t1 = racetrack.best_cheats_count(100)
-    print(t1)
+    t1 = racetrack.best_cheats_count(2, 100)
+    assert t1 == 1448
 
 
 if __name__ == "__main__":
