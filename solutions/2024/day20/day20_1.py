@@ -137,7 +137,7 @@ class Racetrack:
         total = 0
         width = self.m - 1
         height = self.n - 1
-        n = len(best_path)
+
         for i_n, node in enumerate(best_path[:-1]):
             x_min = max(node.x - cheat_amount, 0)
             x_max = min(node.x + cheat_amount, width)
