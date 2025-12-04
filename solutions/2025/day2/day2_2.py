@@ -1,5 +1,4 @@
 from handy_dandy_library.file_processing import read_lines
-from collections import Counter
 
 
 def is_multi_invalid(x: str) -> bool:
