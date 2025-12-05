@@ -39,33 +39,23 @@ class Kitchen:
         self.fresh_ingredient_ranges.sort(key=lambda x: (x[0], x[1]))
 
         n = len(self.fresh_ingredient_ranges)
-        i = 0
-        j = 1
-        for _ in range(n + 1):
+        i, j = 0, 1
+        for _ in range(n - 1):
             if i == n - 1:
                 break
             x0 = self.fresh_ingredient_ranges[i]
             x1 = self.fresh_ingredient_ranges[j]
-            if x0[0] == x1[0]:
-                i = j
-                j += 1
-                continue
             if x0[1] >= x1[1]:
                 if j == n - 1:
                     return count + x0[1] - x0[0] + 1
                 j += 1
                 continue
-            if x0[1] < x1[0]:
+            elif x0[1] < x1[0]:
                 count += x0[1] - x0[0] + 1
-                i = j
-                j += 1
-                continue
-            if x0[1] >= x1[0]:
+            elif x0[1] >= x1[0]:
                 count += x1[0] - x0[0]
-                i = j
-                j += 1
-                continue
-            raise ZeroDivisionError("XMAS PANIC")
+            i = j
+            j += 1
 
         last_range = self.fresh_ingredient_ranges[-1]
         count += last_range[1] - last_range[0] + 1

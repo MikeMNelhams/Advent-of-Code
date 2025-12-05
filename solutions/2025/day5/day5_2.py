@@ -8,8 +8,8 @@ def main():
 
     kitchen = Kitchen(read_lines("puzzle5_1.txt"))
     t = kitchen.possible_fresh_ingredient_count()
+    assert t == 341753674214273
     print(t)
-    # 341753674214273
 
 
 if __name__ == "__main__":
