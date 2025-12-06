@@ -1,3 +1,5 @@
+import time
+
 from handy_dandy_library.file_processing import read_lines
 
 
@@ -50,7 +52,7 @@ class Kitchen:
                     return count + x0[1] - x0[0] + 1
                 j += 1
                 continue
-            elif x0[1] < x1[0]:
+            if x0[1] < x1[0]:
                 count += x0[1] - x0[0] + 1
             elif x0[1] >= x1[0]:
                 count += x1[0] - x0[0]

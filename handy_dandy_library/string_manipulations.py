@@ -77,6 +77,10 @@ def parse_int_ignore_spaces(phrase: str) -> int:
     return int(phrase.replace(' ', ''))
 
 
+def parse_ints_strip_spaces(phrase: str) -> list[int]:
+    return [int(x) for x in phrase.split(" ") if x != ""]
+
+
 def make_blue(x: str) -> str:
     return f"{PrintColors.OKBLUE}{x}{PrintColors.ENDC}"
 
