@@ -1,6 +1,8 @@
 from handy_dandy_library.file_processing import read_lines
 from handy_dandy_library.string_manipulations import make_blue
+
 import bisect
+from collections import defaultdict
 
 
 class TachyonGrid:
@@ -56,13 +58,41 @@ class TachyonGrid:
             beams = list(new_beams)
         raise ValueError("AHHH THERE'S TACHYON BEAMS EVERYWHERE!")
 
+    def simulate_paths_count(self) -> int:
+        paths = defaultdict(int)
+        paths[(self.start_point[0], self.start_point[1])] = 1
+        paths_count = 0
+        for _ in range(self.n):
+            if not paths:
+                return paths_count
+            new_paths = defaultdict(int)
+            for path, count in paths.items():
+                if path[1] not in self.splitters:
+                    paths_count += count
+                    continue
+
+                splitters_in_column = self.splitters[path[1]]
+
+                splitter_index = bisect.bisect(splitters_in_column, path[0])
+                if splitter_index == len(splitters_in_column):
+                    paths_count += count
+                    continue
+
+                splitter_x = splitters_in_column[splitter_index]
+
+                if path[1] > 0:
+                    new_paths[(splitter_x, path[1] - 1)] += count
+                if path[1] < self.m - 1:
+                    new_paths[(splitter_x, path[1] + 1)] += count
+            paths = new_paths
+        raise ValueError("AHHH THERE'S TACHYON BEAMS EVERYWHERE!")
+
 
 def main():
     test_tachyon_grid = TachyonGrid("puzzle7_1_test_input.txt")
     assert test_tachyon_grid.simulate_split_beams_count() == 21
 
     tachyon_grid = TachyonGrid("puzzle7_2.txt")
-    # 17659 too high!
     print(tachyon_grid.simulate_split_beams_count())
 
 
