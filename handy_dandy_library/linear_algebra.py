@@ -115,6 +115,10 @@ class Vector3D:
         return (self.x**2 + self.y**2 + self.z**2) ** 0.5
 
     @property
+    def magnitude_squared(self) -> int:
+        return self.x**2 + self.y**2 + self.z**2
+
+    @property
     def unit_vector(self) -> Vector3D:
         magnitude = self.xy_projection.magnitude
         if magnitude == 0:
