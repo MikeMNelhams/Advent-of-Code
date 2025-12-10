@@ -3,6 +3,7 @@ from handy_dandy_library.linear_algebra import Vector3D
 
 from itertools import combinations
 from functools import reduce
+from heapq import nlargest
 import operator
 
 
@@ -17,16 +18,9 @@ class ElectricJunctionBoxes:
 
     @staticmethod
     def __sorted_distances(junctions: list[Vector3D]) -> list[tuple[int, int, int]]:
-        distances = []
         n = len(junctions)
-        for i, j in combinations(range(n), 2):
-            x0 = junctions[i]
-            x1 = junctions[j]
-            if i == j:
-                continue
-            d = (x1 - x0).magnitude_squared
-            distances.append((d, i, j))
-
+        distances = [((junctions[i] - junctions[j]).magnitude_squared, i, j)
+                     for i, j in combinations(range(n), 2)]
         distances.sort(key=lambda x: x[0])
         return distances
 
@@ -44,8 +38,8 @@ class ElectricJunctionBoxes:
                 junctions_to_circuits[k] = i_circuit_index
             circuits[j_circuit_index].clear()
 
-        w = sorted((len(x) for x in circuits), reverse=True)[:top_count]
-        return reduce(operator.mul, w, 1)
+        top_n = nlargest(top_count, (len(x) for x in circuits))
+        return reduce(operator.mul, top_n, 1)
 
     def final_circuit_connection_x_product(self) -> int:
         circuits = [{i} for i in range(self.n)]
