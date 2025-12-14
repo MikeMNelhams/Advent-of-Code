@@ -33,18 +33,10 @@ class MovieTheatre:
             pairs.append((area, i, j))
         pairs.sort(key=lambda x: x[0], reverse=True)
 
-        compressed_x = {}
-        compressed_y = {}
-        uncompressed_x = {}
-        uncompressed_y = {}
-
-        for i, x in enumerate(sorted(set(v.x for v in self.red_tiles))):
-            compressed_x[x] = 2 * i
-            uncompressed_x[2 * i] = x
-
-        for i, y in enumerate(sorted(set(v.y for v in self.red_tiles))):
-            compressed_y[y] = 2 * i
-            uncompressed_y[2 * i] = y
+        compressed_x = {x: 2 * i for i, x in
+                        enumerate(sorted(set(v.x for v in self.red_tiles)))}
+        compressed_y = {y: 2 * i for i, y in
+                        enumerate(sorted(set(v.y for v in self.red_tiles)))}
 
         def compressed_red_tile(index: int) -> Vector2D:
             return Vector2D((compressed_x[self.red_tiles[index].x],
