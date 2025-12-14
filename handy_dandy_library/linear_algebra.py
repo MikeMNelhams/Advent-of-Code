@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Self
+
 import math
 
 from handy_dandy_library.list_operations import consecutive_pairs
