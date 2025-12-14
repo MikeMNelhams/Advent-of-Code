@@ -80,7 +80,8 @@ class MovieTheatre:
             maxy = max(a.y, c.y)
             minx = min(a.x, c.x)
             miny = min(a.y, c.y)
-
+            if minx == maxx or miny == maxy:
+                continue
             if any(Vector2D((x, y)) not in hull_points
                    for x in range(minx, maxx + 1)
                    for y in (miny, maxy)):
